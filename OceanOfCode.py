@@ -4,7 +4,7 @@ import copy
 
 game_board = [ None , None ]
 _board = None
-
+movement_f = { 'N': None,'S': None,'E': None,'W': None }
 
 WIDTH, HEIGHT, MY_ID = [int(i) for i in input().split()]
 OPP_ID = (MY_ID + 1) % 2
@@ -24,6 +24,10 @@ class Submarine():
     def __init__(self,clone):
         self.out = ''
         self.x, self.y = 0, 0
+        if clone is not None :
+            self.treasure_map = copy.deepcopy(clone.treasure_map)
+        else :
+            self.treasure_map = TREASURE_MAP
 
     @property
     def sector(self):
@@ -71,6 +75,14 @@ class Board(Submarine):
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
 
+class StorySubmarin(Board):
+
+    def __init__(self,clone):
+        super().__init__(clone)
+        if clone is not None:
+            self.previous = clone
+        else :
+            self.previous = None
 
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
