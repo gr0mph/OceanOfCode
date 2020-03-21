@@ -1,8 +1,16 @@
 # OceanOfCode
 CodingGame Ocean Of Code challenge
 
-## Creation of branch dev_user (use github account)
+** Starting **
 
-## Can write test under test folder.
+- [x] Create your own branch (for example dev_gr0mph) "It's me !"
+- [x] Write your test (for exemple under test folder)
+- [ ] Push your code
 
-Check example If you need.
+** Merging **
+
+- [ ] Good avancement shall be merge in master branch
+
+** Contributing **
+
+- [ ] Ask me

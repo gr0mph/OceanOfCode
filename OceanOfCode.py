@@ -1,16 +1,18 @@
 import sys
 import math
+import copy
 
 game_board = [ None , None ]
 _board = None
-# Auto-generated code below aims at helping you parse
-# the standard input according to the problem statement.
+
 
 WIDTH, HEIGHT, MY_ID = [int(i) for i in input().split()]
 OPP_ID = (MY_ID + 1) % 2
 TREASURE_MAP = []
 for i in range(HEIGHT):
     TREASURE_MAP.append(input())
+
+DEEP = 3
 
 # Write an action using print
 # To debug: print("Debug messages...", file=sys.stderr)
