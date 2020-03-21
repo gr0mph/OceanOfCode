@@ -25,8 +25,7 @@ class Submarine():
 
     @property
     def sector(self):
-        # TODO -->
-        pass
+        return 1 + (self.x // 5) + ( (self.y // 5) * 3 )
 
     # MOVE DIRECTION {NORTH, EAST, WEST, SOUTH} LOAD {TORPEDO,SONAR,etc}
     def write_move(self,direction,load):
@@ -39,7 +38,6 @@ class Submarine():
     def write_torpedo(self,x,y):
         t = f'TORPEDO {x} {y}'
         self.out = t if self.out == '' else f'{self.out} | {t}'
-
 
     # TODO -->
     def read_move(self,direction):

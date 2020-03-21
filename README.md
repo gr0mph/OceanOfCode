@@ -1,4 +1,8 @@
 # OceanOfCode
 CodingGame Ocean Of Code challenge
 
-# 1. Creation of branch dev_user (use github account)
+## Creation of branch dev_user (use github account)
+
+## Can write test under test folder.
+
+Check example If you need.
