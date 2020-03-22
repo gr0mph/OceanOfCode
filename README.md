@@ -1,5 +1,8 @@
 # OceanOfCode
-CodingGame Ocean Of Code challenge
+
+![](picture/shutterstock.min.jpg)
+
+***CodingGame Ocean Of Code challenge***
 
 **Starting**
 
