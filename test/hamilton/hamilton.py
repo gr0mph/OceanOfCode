@@ -19,11 +19,14 @@ XX...
 '''.split()
 
 ROAD_GRID = []
-ROAD_GRID.append('S..XX')
-ROAD_GRID.append('X..XX')
-ROAD_GRID.append('X....')
-ROAD_GRID.append('XX...')
-ROAD_GRID.append('XX...')
+ROAD_GRID.append('S..x..x')
+ROAD_GRID.append('...x..x')
+ROAD_GRID.append('......x')
+ROAD_GRID.append('XX....x')
+ROAD_GRID.append('......x')
+ROAD_GRID.append('......x')
+ROAD_GRID.append('......x')
+ROAD_GRID.append('XX....x')
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -43,6 +46,8 @@ class HamiltonSolver:
                     self.start = (r, c)
                 elif item in EMPTY_SPACE_SYMBOLS:
                     self.legal.add((r, c))
+        if self.start == None :
+            self.start = self.legal.pop()
 
     def read_turn(self,path,turn):
         return path[turn]
@@ -96,18 +101,22 @@ class HamiltonSolver:
                 dirs_pop()
 
 
-def write_termios(road,height):
-    os.system('clear')
-    #for i in range(height+2):
-    #    sys.stdout.write("\033[F")
-    #    sys.stdout.write("\033[K")
-    #time.sleep(1)
+def write_termios(road,height,TURN):
+    #os.system('clear')
+    if TURN == 0 :
+        for i in range(height+2):
+            print()
+
+    for i in range(height+2):
+        sys.stdout.write("\033[F")
+        sys.stdout.write("\033[K")
 
     for i in range(height):
         print(road[i])
     print()
     print('Turn : {}'.format(TURN))
     time.sleep(0.2)
+
 
 class _hamilton(unittest.TestCase):
 
@@ -157,7 +166,7 @@ class _hamilton(unittest.TestCase):
             l_road = list(ROAD_GRID[r])
             l_road[c] = o
             ROAD_GRID[r] = ''.join(l_road)
-            write_termios(ROAD_GRID, len(ROAD_GRID))
+            write_termios(ROAD_GRID, len(ROAD_GRID), TURN)
             TURN += 1
 
 

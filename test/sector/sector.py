@@ -17,11 +17,14 @@ TREASURE_MAP.append('.....xx........')
 TREASURE_MAP.append('.....xx........')
 TREASURE_MAP.append('.....xx........')
 
+for h in TREASURE_MAP:
+    print(h)
+
 def sector(x,y):
     s = (x // 5) + 1 + ( (y // 5) * 3 )
     return s
 
-def select(n):
+def select(n,TREASURE_MAP):
     row, col = ((n - 1) // 3) * 5 , ((n - 1) % 3) * 5
     SECTOR_MAP = []
     for r1 in range(0,5):
@@ -47,13 +50,13 @@ class _sector(unittest.TestCase):
     def test_select(self):
         print()
         for n in range(1,10):
-            r, c, SELECT_MAP = select(n)
+            r, c, SELECT_MAP = select(n,TREASURE_MAP)
             #print('n {} r {} c {}'.format(n,r,c))
             #for line in SELECT_MAP:
             #   print(line)
 
         # Example
-        r, c, SELECT_MAP = select(6)
+        r, c, SELECT_MAP = select(5,TREASURE_MAP)
         for line in SELECT_MAP:
             print(line)
 

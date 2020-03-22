@@ -1,3 +1,7 @@
-
+# Resource
 /resource/01_snake_solver/
 /resource/02_snake_solver/
+
+# Python cache
+/test/hamilton/__pycache__/
+/test/sector/__pycache__/
