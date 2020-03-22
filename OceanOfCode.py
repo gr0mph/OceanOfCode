@@ -171,8 +171,6 @@ for r in SECTOR_MAP:
 
 puzzle = HamiltonSolver(SECTOR_MAP)
 
-
-
 while True:
     game_board[MY_ID] = _board(game_board[MY_ID])
     game_board[OPP_ID] = _board(game_board[OPP_ID])

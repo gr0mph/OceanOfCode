@@ -1,5 +1,6 @@
 import unittest
 
+
 TREASURE_MAP = []
 TREASURE_MAP.append('.xx.....xx.....')
 TREASURE_MAP.append('........xx.....')
@@ -17,6 +18,12 @@ TREASURE_MAP.append('.....xx........')
 TREASURE_MAP.append('.....xx........')
 TREASURE_MAP.append('.....xx........')
 
+
+H_SECTOR1 = {
+    (4,0) : None if TREASURE_MAP[0][4] == 'x' else True
+}
+
+
 for h in TREASURE_MAP:
     print(h)
 
@@ -32,6 +39,38 @@ def select(n,TREASURE_MAP):
         l_map = l_map[ col : col+5]
         SECTOR_MAP.append(''.join(l_map))
     return row, col, SECTOR_MAP
+
+def prepare(TREASURE_MAP):
+    TRANSIT_SECTOR = []
+    TRANSIT_SECTOR.append(None)
+    for i in range(1,10):
+        TRANSIT_SECTOR.append(set())
+
+    ROW_HEIGHT = (4,5,9,10)
+    for r1 in ROW_HEIGHT:
+        for c1 in range (0,15):
+            if TREASURE_MAP[r1][c1] == '.':
+                TRANSIT_SECTOR[sector(r1,c1)].add((r1,c1))
+
+    COL_WIDTH = (4,5,9,10)
+    for r1 in range(0,15):
+        for c1 in COL_WIDTH:
+            if TREASURE_MAP[r1][c1] == '.':
+                TRANSIT_SECTOR[sector(r1,c1)].add((r1,c1))
+
+    nb = 1
+    for t in TRANSIT_SECTOR:
+        if t is None :
+            continue
+        print()
+        r, c, SELECT_MAP = select(nb,TREASURE_MAP)
+        for line in SELECT_MAP:
+            print(line)
+
+        for s in t:
+            print(s)
+        nb += 1
+
 
 class _sector(unittest.TestCase):
 
@@ -59,6 +98,10 @@ class _sector(unittest.TestCase):
         r, c, SELECT_MAP = select(5,TREASURE_MAP)
         for line in SELECT_MAP:
             print(line)
+
+    def test_prepare(self):
+        print()
+        prepare(TREASURE_MAP)
 
 if __name__ == '__main__':
     unittest.main()
