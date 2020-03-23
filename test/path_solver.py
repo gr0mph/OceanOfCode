@@ -22,17 +22,17 @@ import unittest
 
 class _path_solver(unittest.TestCase):
 
-    def test_previous_0_sector(self):
+    def _previous_0_sector(self):
         print()
         print('x {} y {} s {} '.format(3,9,sector(3,9)))
 
-    def test_previous_1_select(self):
+    def _previous_1_select(self):
         print()
         r, c, SELECT_MAP = select(5,TREASURE_MAP)
         for line in SELECT_MAP:
             print(line)
 
-    def test_previous_2_hamilton(self):
+    def _previous_2_hamilton(self):
         print()
         global TURN
         r, c, SELECT_MAP = select(5,TREASURE_MAP)
@@ -73,15 +73,37 @@ class _path_solver(unittest.TestCase):
 
         for g in TRANSIT_GLOBAL:
             g = ''.join(g)
-            print(g)
 
+        puzzle = Hamilton(TRANSIT_GLOBAL)
+        _soluce = None
+        nb = 1
+        while _soluce is None :
+            if nb == 0 :
+                puzzle.change_start()
+            nb = 0
+            for solution in puzzle.solve():
+                nb += 1
+                _soluce = solution
+                break
+
+        TURN = 1
+        for i in range(len(_soluce)):
+            o, r, c = puzzle.read_turn(_soluce,i)
+            l_road = list(TRANSIT_GLOBAL[r])
+            l_road[c] = o
+            TRANSIT_GLOBAL[r] = ''.join(l_road)
+            write_termios(TRANSIT_GLOBAL, len(TRANSIT_GLOBAL), TURN)
+            TURN += 1
+
+    def _previous_4_easy_big_map(self):
+        # Big map 3 x 3
         TEST = []
-        TEST.append('S..')
+        TEST.append('...')
         TEST.append('...')
         TEST.append('...')
 
         global TURN
-        TURN = 0
+        TURN = 1
         _soluce = None
         puzzle = Hamilton(TEST)
         for solution in puzzle.solve():
@@ -89,34 +111,13 @@ class _path_solver(unittest.TestCase):
             break
 
         for i in range(len(_soluce)):
-            o, r, c = puzzle.read_turn(solution,i)
+            o, r, c = puzzle.read_turn(_soluce,i)
             l_road = list(TEST[r])
             l_road[c] = o
             TEST[r] = ''.join(l_road)
             write_termios(TEST, len(TEST), TURN)
             TURN += 1
 
-        TEST2 = []
-        TEST2.append('...')
-        TEST2.append('...')
-        TEST2.append('...')
-        puzzle = Hamilton(TEST2)
-        iterable_hamilton = puzzle.solve()
-        puzzle.change_start()
-        puzzle.change_start()
-        iterable_hamilton = puzzle.solve()
-        for solution in iterable_hamilton:
-            _soluce = solution
-            break
-
-        TURN = 0
-        for i in range(len(_soluce)):
-            o, r, c = puzzle.read_turn(solution,i)
-            l_road = list(TEST2[r])
-            l_road[c] = o
-            TEST2[r] = ''.join(l_road)
-            write_termios(TEST2, len(TEST2), TURN)
-            TURN += 1
 
 
 if __name__ == '__main__':

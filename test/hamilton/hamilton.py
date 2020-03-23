@@ -38,6 +38,7 @@ class HamiltonSolver:
         self.grid = grid
         self.h = h = len(grid)
         self.w = w = len(grid[0])
+        self.nb = 0
         self.start = None
         self.legal = set()
         for r, row in enumerate(grid):
@@ -48,12 +49,14 @@ class HamiltonSolver:
                     self.legal.add((r, c))
         if self.start == None :
             self.start = self.legal.pop()
-            print(self.start)
+            print('(NO START) GET {}'.format(self.start))
+            print('(NO START) SET {}'.format(self.legal))
 
     def change_start(self):
         self.legal.add(self.start)
         self.start = self.legal.pop()
-        print(self.start)
+        print('(CHANGE) GET {}'.format(self.start))
+        print('(CHANGE) SET {}'.format(self.legal))
 
     def read_turn(self,path,turn):
         return path[turn]
@@ -62,7 +65,7 @@ class HamiltonSolver:
         """Format a path as a string."""
         grid = [[OBSTACLE_SYMBOL] * self.w for _ in range(self.h)]
         for i, (o,r, c) in enumerate(path, start=1):
-            #print('({},{})'.format(r,c))
+            print('({},{})'.format(r,c))
             grid[r][c] = i
         w = len(str(len(path) + 1)) + 1
 
@@ -99,6 +102,7 @@ class HamiltonSolver:
                     legal_remove(new_coord)
                     dirs_append(iter(DIRS))
                     if not legal:
+                        print("GAGNE")
                         yield result
                     break
             else:
