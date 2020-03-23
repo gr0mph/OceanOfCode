@@ -102,7 +102,6 @@ class HamiltonSolver:
                     legal_remove(new_coord)
                     dirs_append(iter(DIRS))
                     if not legal:
-                        print("GAGNE")
                         yield result
                     break
             else:

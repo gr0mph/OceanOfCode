@@ -32,6 +32,10 @@ def sector(x,y):
     s = (x // 5) + 1 + ( (y // 5) * 3 )
     return s
 
+def sectorb(x,y):
+    s = x + 1 + (y * 3)
+    return s
+
 def select(n,TREASURE_MAP):
     row, col = ((n - 1) // 3) * 5 , ((n - 1) % 3) * 5
     SECTOR_MAP = []
