@@ -17,3 +17,8 @@
 **Contributing**
 
 - [ ] Ask me
+
+**Good movement**
+
+- [ ] Create a simple Matrix depend of state path to choose best path.
+- [x] Check state of path function
