@@ -48,6 +48,12 @@ class HamiltonSolver:
                     self.legal.add((r, c))
         if self.start == None :
             self.start = self.legal.pop()
+            print(self.start)
+
+    def change_start(self):
+        self.legal.add(self.start)
+        self.start = self.legal.pop()
+        print(self.start)
 
     def read_turn(self,path,turn):
         return path[turn]

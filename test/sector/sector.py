@@ -21,11 +21,9 @@ TREASURE_MAP.append('.....xx........')
 TREASURE_MAP.append('.....xx........')
 TREASURE_MAP.append('.....xx........')
 
-
 H_SECTOR1 = {
     (4,0) : None if TREASURE_MAP[0][4] == 'x' else True
 }
-
 
 #for h in TREASURE_MAP:
 #    print(h)
@@ -44,21 +42,12 @@ def select(n,TREASURE_MAP):
     return row, col, SECTOR_MAP
 
 def prepare(TREASURE_MAP):
-    TRANSIT_SECTOR = {
-    1 : set() , 2 : set() , 3 : set() ,
-    4 : set() , 5 : set() , 6 : set() ,
-    7 : set() , 8 : set() , 9 : set() }
-
+    TRANSIT_SECTOR = {}
     for i in range(1,10):
         TRANSIT_SECTOR[str(i)+'S'] = set()
         TRANSIT_SECTOR[str(i)+'N'] = set()
         TRANSIT_SECTOR[str(i)+'W'] = set()
         TRANSIT_SECTOR[str(i)+'E'] = set()
-
-
-    print('Before')
-    for t in TRANSIT_SECTOR[1]:
-        print(t)
 
     ROW_HEIGHT = ( (4,5) , (9,10) )
     for r1, r2 in ROW_HEIGHT:
@@ -71,14 +60,9 @@ def prepare(TREASURE_MAP):
     for r1 in range(0,15):
         for c1, c2 in COL_WIDTH:
             if TREASURE_MAP[r1][c1] == '.' and TREASURE_MAP[r1][c2] == '.':
-                TRANSIT_SECTOR[str(sector(c1,r1))+'W'].add((c1,r1))
-                TRANSIT_SECTOR[str(sector(c2,r1))+'E'].add((c2,r1))
+                TRANSIT_SECTOR[str(sector(c1,r1))+'E'].add((c1,r1))
+                TRANSIT_SECTOR[str(sector(c2,r1))+'W'].add((c2,r1))
 
-    print('Before')
-    for t in TRANSIT_SECTOR[1]:
-        print(t)
-
-    print('End')
     return TRANSIT_SECTOR
 
 
