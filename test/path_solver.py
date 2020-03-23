@@ -11,6 +11,8 @@ from sector.sector import sectorb
 
 # Class
 from hamilton.hamilton import HamiltonSolver as Hamilton
+from path.path import PathFinding as SimplePath
+
 
 EMPTY_SPACE_SYMBOLS = '.'
 STARTING_POINT_SYMBOLS = 'Ss'
@@ -172,27 +174,49 @@ class _path_solver(unittest.TestCase):
         o, r, c = _soluce[0]
         s1 = sectorb(r,c)
 
+        start_c1, start_r1 = None, None
+        finish_c1, finish_r1 = None, None
+
+        t1 = 0
         for t in TRANSIT_SET[s1]:
             print('TRANSIT_SET {}'.format(t))
             print('TRANSIT_SECTOR {}'.format(len(TRANSIT_SECTOR[t])))
             for c1, r1 in TRANSIT_SECTOR[t]:
+                if t1 == 0 :
+                    start_c1, start_r1 = c1, r1
+                else :
+                    finish_c1, finish_r1 = c1, r1
                 print('TRANSIT_SECTOR : ({},{})'.format(c1,r1))
+                t1 += 1
+                break
+
 
 
         # Find a path
         TURN = 1
         r, c, SELECT_MAP = select(s1,TREASURE_MAP)
-        puzzle = Hamilton(SELECT_MAP)
+
+        l_road = list(SELECT_MAP[start_r1])
+        l_road[start_c1] = 'S'
+        SELECT_MAP[start_r1] = ''.join(l_road)
+
+        l_road = list(SELECT_MAP[finish_r1])
+        l_road[finish_c1] = 'F'
+        SELECT_MAP[finish_r1] = ''.join(l_road)
+
+        for line in SELECT_MAP:
+            print(line)
+
+        puzzle = SimplePath(SELECT_MAP)
         _soluce = None
         for solution in puzzle.solve():
             _soluce = solution
             break
 
-
         for i in range(len(_soluce)):
             o, r, c = puzzle.read_turn(solution,i)
             l_road = list(SELECT_MAP[r])
-            l_road[c] = o
+            l_road[c] = 'S'
             SELECT_MAP[r] = ''.join(l_road)
             write_termios(SELECT_MAP, len(SELECT_MAP), TURN)
             TURN += 1
