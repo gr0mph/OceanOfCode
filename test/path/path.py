@@ -28,12 +28,10 @@ class PathFinding:
         for r, row in enumerate(grid):
             for c, item in enumerate(row):
                 if item in STARTING_POINT_SYMBOLS:
-                    print('A START has been find')
                     self.start = (r, c)
                 elif item in EMPTY_SPACE_SYMBOLS:
                     self.legal.add((r, c))
                 elif item in FINISHING_POINT_SYMBOLS:
-                    print('A FINISH has been find')
                     self.finish = (r,c)
 
     def read_turn(self,path,turn):
@@ -41,7 +39,6 @@ class PathFinding:
 
     def solve(self):
         """Generate solutions as lists of coordinates."""
-        print("SOLVE THIS")
         r , c = self.start
         result = [ ('S',r, c)]
         path = [self.start]
@@ -64,7 +61,6 @@ class PathFinding:
             for orientation, dr, dc in dirs[-1]:
                 new_coord = r + dr, c + dc
                 new_path = orientation, r + dr, c + dc
-                print('New: {} Finish: {}'.format(new_coord,self.finish))
                 if new_coord in legal:
                     result_append(new_path)
                     path_append(new_coord)
@@ -72,7 +68,9 @@ class PathFinding:
                     dirs_append(iter(DIRS))
                     break
                 if new_coord == self.finish:
-                    print("NEVER ?")
+                    result_append(new_path)
+                    path_append(new_coord)
+                    dirs_append(iter(DIRS))
                     yield result
 
             else:

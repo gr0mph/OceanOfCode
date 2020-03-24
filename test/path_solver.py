@@ -29,33 +29,42 @@ import unittest
 import copy
 
 def treasure_update(TREASURE_MAP,SELECT_MAP,sector):
-    # TODO: Not usefull because CLONE (PROTOTYPE) shall do it before
-    #TREASURE_MAP = copy.deepcopy(TREASURE_MAP)
-    if sector == 1 :
-        TREASURE_MAP[0] = list(TREASURE_MAP[0])
-        SELECT_MAP[0] = list(SELECT_MAP[0])
-        TREASURE_MAP[0] = SELECT_MAP[0][0:5] + TREASURE_MAP[0][5:15]
-        TREASURE_MAP[0] = ''.join(TREASURE_MAP[0])
-    elif sector == 2 :
-        pass
-    elif sector == 3 :
-        pass
-    elif sector == 4 :
-        pass
-    elif sector == 5 :
-        pass
-    elif sector == 6 :
-        pass
-    elif sector == 7 :
-        pass
-    elif sector == 8 :
-        pass
-    elif sector == 9 :
-        pass
+    t_c1 = ( (0,0,0,5,5,15) , (0,5,0,5,10,15) , (0,10,0,5,15,15) )
+    t_r1 = ( (0,5) , (5,10) , (10,15) )
+    id_c1 = (sector - 1) % 3
+    id_r1 = (sector - 1) // 3
+    t1_c1, t1_c2, s1_c1, s1_c2, t2_c1, t2_c2 = t_c1[id_c1]
+    t_and_s_r1, t_and_s_r2 = t_r1[id_r1]
+
+    if id_c1 == 1 :
+        print("Find it")
+
+    for r1 in range(t_and_s_r1,t_and_s_r2):
+        TREASURE_MAP[r1], SELECT_MAP[r1] = list(TREASURE_MAP[r1]), list(SELECT_MAP[r1])
+        print("T_MAP[0] {} S_MAP {} T_MAP[1] {}".format(TREASURE_MAP[r1][t1_c1:t1_c2],SELECT_MAP[r1][0:5],TREASURE_MAP[r1][t2_c1:t2_c2]))
+        TREASURE_MAP[r1] = TREASURE_MAP[r1][t1_c1:t1_c2] + SELECT_MAP[r1][0:5] + TREASURE_MAP[r1][t2_c1:t2_c2]
+        TREASURE_MAP[r1] = ''.join(TREASURE_MAP[r1])
     return TREASURE_MAP
 
+def treasure_next(TRANSIT_SET,TRANSIT_SECTOR,id_sector):
+    start_c1, start_r1 = None, None
+    finish_c1, finish_r1 = None, None
 
-def transit(TREASURE_MAP,TRANSIT_GLOBAL):
+    t1 = 0
+    for t in TRANSIT_SET[id_sector]:
+        print('TRANSIT_SET {}'.format(t))
+        print('TRANSIT_SECTOR {}'.format(len(TRANSIT_SECTOR[t])))
+        for c1, r1 in TRANSIT_SECTOR[t]:
+            if t1 == 0 :
+                start_c1, start_r1 = c1, r1
+            else :
+                finish_c1, finish_r1 = c1, r1
+            print('TRANSIT_SECTOR : ({},{})'.format(c1,r1))
+            t1 += 1
+            break
+    return start_r1, start_c1, finish_r1, finish_c1
+
+def treasure_transit(TREASURE_MAP,TRANSIT_GLOBAL):
     TRANSIT_SECTOR = prepare(TREASURE_MAP)
     if len(TRANSIT_SECTOR['1S']) == 0 and len(TRANSIT_SECTOR['1W']) == 0:
         TRANSIT_GLOBAL[0][0] = 'x'
@@ -188,7 +197,7 @@ class _path_solver(unittest.TestCase):
     def _previous_5_medium_big_map(self):
         print()
         global PUZZLE_GLOBAL
-        TRANSIT_SECTOR,_soluce = transit(TREASURE_MAP,TRANSIT_GLOBAL)
+        TRANSIT_SECTOR,_soluce = treasure_transit(TREASURE_MAP,TRANSIT_GLOBAL)
 
         TURN = 1
         for i in range(len(_soluce)):
@@ -202,23 +211,7 @@ class _path_solver(unittest.TestCase):
         o, r, c = _soluce[0]
         s1 = sectorb(r,c)
 
-        start_c1, start_r1 = None, None
-        finish_c1, finish_r1 = None, None
-
-        t1 = 0
-        for t in TRANSIT_SET[s1]:
-            print('TRANSIT_SET {}'.format(t))
-            print('TRANSIT_SECTOR {}'.format(len(TRANSIT_SECTOR[t])))
-            for c1, r1 in TRANSIT_SECTOR[t]:
-                if t1 == 0 :
-                    start_c1, start_r1 = c1, r1
-                else :
-                    finish_c1, finish_r1 = c1, r1
-                print('TRANSIT_SECTOR : ({},{})'.format(c1,r1))
-                t1 += 1
-                break
-
-
+        start_r1, start_c1, finish_r1, finish_c1 = treasure_next(TRANSIT_SET,TRANSIT_SECTOR,s1)
 
         # Find a path
         TURN = 1
@@ -249,41 +242,26 @@ class _path_solver(unittest.TestCase):
             write_termios(SELECT_MAP, len(SELECT_MAP), TURN)
             TURN += 1
 
-    def test_previous_6_hard_big_map(self):
+    def _previous_6_hard_big_map(self):
         print()
         global PUZZLE_GLOBAL
         global TREASURE_MAP
-        TRANSIT_SECTOR,_soluce = transit(TREASURE_MAP,TRANSIT_GLOBAL)
+        TRANSIT_SECTOR,TREASURE_SOLUCE = treasure_transit(TREASURE_MAP,TRANSIT_GLOBAL)
 
         TURN = 1
-        for i in range(len(_soluce)):
-            o, r, c = _soluce[i]
+        for i in range(len(TREASURE_SOLUCE)):
+            o, r, c = TREASURE_SOLUCE[i]
             l_road = list(TRANSIT_GLOBAL[r])
             l_road[c] = o
             TRANSIT_GLOBAL[r] = ''.join(l_road)
-            #write_termios(TRANSIT_GLOBAL, len(TRANSIT_GLOBAL), TURN)
+            #print("o {} r {} c {} ".format(o,r,c))
+            write_termios(TRANSIT_GLOBAL, len(TRANSIT_GLOBAL), TURN)
             TURN += 1
 
-        o, r, c = _soluce[0]
+        o, r, c = TREASURE_SOLUCE[0]
         s1 = sectorb(r,c)
 
-        start_c1, start_r1 = None, None
-        finish_c1, finish_r1 = None, None
-
-        t1 = 0
-        for t in TRANSIT_SET[s1]:
-            print('TRANSIT_SET {}'.format(t))
-            print('TRANSIT_SECTOR {}'.format(len(TRANSIT_SECTOR[t])))
-            for c1, r1 in TRANSIT_SECTOR[t]:
-                if t1 == 0 :
-                    start_c1, start_r1 = c1, r1
-                else :
-                    finish_c1, finish_r1 = c1, r1
-                print('TRANSIT_SECTOR : ({},{})'.format(c1,r1))
-                t1 += 1
-                break
-
-
+        start_r1, start_c1, finish_r1, finish_c1 = treasure_next(TRANSIT_SET,TRANSIT_SECTOR,s1)
 
         # Find a path
         TURN = 1
@@ -309,7 +287,7 @@ class _path_solver(unittest.TestCase):
         for i in range(len(_soluce)):
             o, r, c = puzzle.read_turn(solution,i)
             l_road = list(SELECT_MAP[r])
-            l_road[c] = 'S'
+            l_road[c] = o
             SELECT_MAP[r] = ''.join(l_road)
             write_termios(SELECT_MAP, len(SELECT_MAP), TURN)
             TURN += 1
@@ -318,6 +296,133 @@ class _path_solver(unittest.TestCase):
         TREASURE_MAP = treasure_update(TREASURE_MAP,SELECT_MAP,s1)
         write_termios(TREASURE_MAP, len(TREASURE_MAP), 0)
 
+        o, r, c = TREASURE_SOLUCE[1]
+        print("Before new sector {} {}".format(r,c))
+        s1 = sectorb(r,c)
+        print("New sector {}".format(s1))
+
+        start_r1, start_c1, finish_r1, finish_c1 = treasure_next(TRANSIT_SET,TRANSIT_SECTOR,s1)
+
+        # Find a path
+        TURN = 1
+        r, c, SELECT_MAP = select(s1,TREASURE_MAP)
+
+        l_road = list(SELECT_MAP[start_r1])
+        l_road[start_c1 % 5] = 'S'
+        SELECT_MAP[start_r1 % 5] = ''.join(l_road)
+
+        l_road = list(SELECT_MAP[finish_r1])
+        l_road[finish_c1 % 5] = 'F'
+        SELECT_MAP[finish_r1 % 5] = ''.join(l_road)
+
+        puzzle = SimplePath(SELECT_MAP)
+        _soluce = None
+        for solution in puzzle.solve():
+            _soluce = solution
+            break
+
+        for i in range(len(_soluce)):
+            o, r, c = puzzle.read_turn(solution,i)
+            l_road = list(SELECT_MAP[r])
+            l_road[c] = o
+            SELECT_MAP[r] = ''.join(l_road)
+            write_termios(SELECT_MAP, len(SELECT_MAP), TURN)
+            TURN += 1
+
+        print("Near end for planning {}".format(s1))
+        TREASURE_MAP = treasure_update(TREASURE_MAP,SELECT_MAP,s1)
+        write_termios(TREASURE_MAP, len(TREASURE_MAP), 0)
+
+    def test_previous_7_hard_big_map(self):
+        print()
+        global PUZZLE_GLOBAL
+        global TREASURE_MAP
+        TRANSIT_SECTOR,TREASURE_SOLUCE = treasure_transit(TREASURE_MAP,TRANSIT_GLOBAL)
+
+        TURN = 1
+        for i in range(len(TREASURE_SOLUCE)):
+            o, r, c = TREASURE_SOLUCE[i]
+            l_road = list(TRANSIT_GLOBAL[r])
+            l_road[c] = o
+            TRANSIT_GLOBAL[r] = ''.join(l_road)
+            #print("o {} r {} c {} ".format(o,r,c))
+            write_termios(TRANSIT_GLOBAL, len(TRANSIT_GLOBAL), TURN)
+            TURN += 1
+
+        o, r, c = TREASURE_SOLUCE[0]
+        s1 = sectorb(r,c)
+
+        start_r1, start_c1, finish_r1, finish_c1 = treasure_next(TRANSIT_SET,TRANSIT_SECTOR,s1)
+
+        # Find a path
+        TURN = 1
+        r, c, SELECT_MAP = select(s1,TREASURE_MAP)
+
+        l_road = list(SELECT_MAP[start_r1])
+        l_road[start_c1] = 'S'
+        SELECT_MAP[start_r1] = ''.join(l_road)
+
+        l_road = list(SELECT_MAP[finish_r1])
+        l_road[finish_c1] = 'F'
+        SELECT_MAP[finish_r1] = ''.join(l_road)
+
+        for line in SELECT_MAP:
+            print(line)
+
+        puzzle = SimplePath(SELECT_MAP)
+        _soluce = None
+        for solution in puzzle.solve():
+            _soluce = solution
+            break
+
+        for i in range(len(_soluce)):
+            o, r, c = puzzle.read_turn(solution,i)
+            l_road = list(SELECT_MAP[r])
+            l_road[c] = o
+            SELECT_MAP[r] = ''.join(l_road)
+            write_termios(SELECT_MAP, len(SELECT_MAP), TURN)
+            TURN += 1
+
+        print("Near end for planning")
+        TREASURE_MAP = treasure_update(TREASURE_MAP,SELECT_MAP,s1)
+        write_termios(TREASURE_MAP, len(TREASURE_MAP), 0)
+
+        o, r, c = TREASURE_SOLUCE[1]
+        print("Before new sector {} {}".format(r,c))
+        s1 = sectorb(r,c)
+        print("New sector {}".format(s1))
+
+        start_r1, start_c1, finish_r1, finish_c1 = treasure_next(TRANSIT_SET,TRANSIT_SECTOR,s1)
+
+        # Find a path
+        TURN = 1
+        r, c, SELECT_MAP = select(s1,TREASURE_MAP)
+
+        l_road = list(SELECT_MAP[start_r1])
+        l_road[start_c1 % 5] = 'S'
+        SELECT_MAP[start_r1 % 5] = ''.join(l_road)
+
+        l_road = list(SELECT_MAP[finish_r1])
+        l_road[finish_c1 % 5] = 'F'
+        SELECT_MAP[finish_r1 % 5] = ''.join(l_road)
+
+        puzzle = SimplePath(SELECT_MAP)
+        _soluce = None
+        for solution in puzzle.solve():
+            _soluce = solution
+            break
+
+        for i in range(len(_soluce)):
+            o, r, c = puzzle.read_turn(solution,i)
+            l_road = list(SELECT_MAP[r])
+            l_road[c] = o
+            SELECT_MAP[r] = ''.join(l_road)
+            write_termios(SELECT_MAP, len(SELECT_MAP), TURN)
+            TURN += 1
+
+        print("Near end for planning {}".format(s1))
+        TREASURE_MAP = treasure_update(TREASURE_MAP,SELECT_MAP,s1)
+        write_termios(TREASURE_MAP, len(TREASURE_MAP), 0)
 
 
 if __name__ == '__main__':
