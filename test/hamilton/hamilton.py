@@ -49,14 +49,12 @@ class HamiltonSolver:
                     self.legal.add((r, c))
         if self.start == None :
             self.start = self.legal.pop()
-            print('(NO START) GET {}'.format(self.start))
-            print('(NO START) SET {}'.format(self.legal))
+            #print('(NO START) GET {}'.format(self.start))
+            #print('(NO START) SET {}'.format(self.legal))
 
     def change_start(self):
         self.legal.add(self.start)
         self.start = self.legal.pop()
-        print('(CHANGE) GET {}'.format(self.start))
-        print('(CHANGE) SET {}'.format(self.legal))
 
     def read_turn(self,path,turn):
         return path[turn]
@@ -124,7 +122,7 @@ def write_termios(road,height,TURN):
         print(road[i])
     print()
     print('Turn : {}'.format(TURN))
-    time.sleep(0.2)
+    time.sleep(1)
 
 
 class _hamilton(unittest.TestCase):
