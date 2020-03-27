@@ -28,6 +28,10 @@ def read_map():
         TREASURE_MAP.append(list(input()))
         print(TREASURE_MAP[i],file=sys.stderr)
 
+def t_check_map(TREASURE_MAP):
+    for i in range(HEIGHT):
+        print(TREASURE_MAP[i],file=sys.stderr)
+
 DEEP = 7
 
 class HamiltonSolver:
@@ -187,6 +191,8 @@ if __name__ == '__main__':
         game_board[OPP_ID] = Board(game_board[OPP_ID])
         update(game_board[MY_ID],game_board[OPP_ID])
 
+        t_check_map(game_board[MY_ID].treasure_map)
+
         sonar_result = input()
         print(sonar_result, file=sys.stderr)
         opponent_orders = input()
@@ -194,7 +200,7 @@ if __name__ == '__main__':
 
         y_row , x_col = puzzle.read_turn(solution,turn)
         game_board[MY_ID].treasure_map[x_col][y_row] = ' '
-        dir = GET_DIRS[ (x_col - game_board[MY_ID].x, y_row - game_board[MY_ID].y)]
+        dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
         game_board[MY_ID].write_move(dir,'TORPEDO')
         print(game_board[MY_ID].out)
 
