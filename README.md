@@ -20,5 +20,12 @@
 
 **Good movement**
 
-- [ ] Create a simple Matrix depend of state path to choose best path.
+- [x] Create a simple Matrix depend of state path to choose best path.
 - [x] Check state of path function
+
+**Stalk annd torpedo**
+
+- [ ] Create a set of possible submarine
+- [ ] On each turn update set and delete impossible Submarine
+- [ ] Find the good submarine
+- [ ] Torpedo it

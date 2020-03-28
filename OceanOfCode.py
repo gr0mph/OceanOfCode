@@ -32,7 +32,7 @@ def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
-DEEP = 10
+DEEP = 3
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -71,7 +71,6 @@ class HamiltonSolver:
         dirs = copy.deepcopy(DIRS)
         random.shuffle(dirs)
         #dirs = [iter(DIRS)]
-        print(dirs,file=sys.stderr)
         dirs = [iter(dirs)]
 
         # Cache attribute lookups in local variables
@@ -82,11 +81,6 @@ class HamiltonSolver:
         legal_remove = legal.remove
         dirs_append = dirs.append
         dirs_pop = dirs.pop
-
-        print("Fuckingpath",file=sys.stderr)
-        print(path,file=sys.stderr)
-        print(legal,file=sys.stderr)
-        print(self.finish,file=sys.stderr)
 
         while path:
             r, c = path[-1]
@@ -104,11 +98,11 @@ class HamiltonSolver:
                         return path
                     break
 
-                elif new_coord in self.finish:
-                    path_append(new_coord)
-                    dirs_append(iter(DIRS))
-                    print("HERE3",file=sys.stderr)
-                    return path
+                #elif new_coord in self.finish:
+                #    path_append(new_coord)
+                #    dirs_append(iter(DIRS))
+                #    print("HERE3",file=sys.stderr)
+                #    return path
 
             else:
                 legal_add(path_pop())
