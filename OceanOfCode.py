@@ -16,7 +16,7 @@ OBSTACLE_SYMBOL = 'x'
 EMPTY_SYMBOLS = '.'
 
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
-GET_DIRS = { (-1,0) : 'N' , (1,0) : 'S' , (0,1) : 'E' , (0,-1) : 'N' }
+GET_DIRS = { (-1,0) : 'N' , (1,0) : 'S' , (0,1) : 'E' , (0,-1) : 'W' }
 
 
 def read_map():
@@ -26,13 +26,13 @@ def read_map():
     global TREASURE_MAP
     for i in range(HEIGHT):
         TREASURE_MAP.append(list(input()))
-        print(TREASURE_MAP[i],file=sys.stderr)
+        #print(TREASURE_MAP[i],file=sys.stderr)
 
 def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
-DEEP = 7
+DEEP = 10
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -68,7 +68,11 @@ class HamiltonSolver:
         start_time = time.time()
         r , c = self.start
         path = [self.start]
-        dirs = [iter(DIRS)]
+        dirs = copy.deepcopy(DIRS)
+        random.shuffle(dirs)
+        #dirs = [iter(DIRS)]
+        print(dirs,file=sys.stderr)
+        dirs = [iter(dirs)]
 
         # Cache attribute lookups in local variables
         path_append = path.append
@@ -79,6 +83,11 @@ class HamiltonSolver:
         dirs_append = dirs.append
         dirs_pop = dirs.pop
 
+        print("Fuckingpath",file=sys.stderr)
+        print(path,file=sys.stderr)
+        print(legal,file=sys.stderr)
+        print(self.finish,file=sys.stderr)
+
         while path:
             r, c = path[-1]
             for orientation, dr, dc in dirs[-1]:
@@ -88,14 +97,17 @@ class HamiltonSolver:
                     legal_remove(new_coord)
                     dirs_append(iter(DIRS))
                     if len(path) > DEEP :
+                        print("HERE1",file=sys.stderr)
                         return path
                     if not legal:
+                        print("HERE2",file=sys.stderr)
                         return path
                     break
 
                 elif new_coord in self.finish:
                     path_append(new_coord)
                     dirs_append(iter(DIRS))
+                    print("HERE3",file=sys.stderr)
                     return path
 
             else:
@@ -167,12 +179,12 @@ def update(me,opp):
 if __name__ == '__main__':
     read_map()
     game_board[MY_ID] = Board(game_board[MY_ID])
-    game_board[MY_ID].treasure_map = TREASURE_MAP
+    game_board[MY_ID].treasure_map = copy.deepcopy(TREASURE_MAP)
     puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
     if puzzle.start == None :
         y_row , x_col = puzzle.coord_random()
         puzzle.start = y_row, x_col
-        game_board[MY_ID].treasure_map[x_col][y_row] = ' '
+        game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
         puzzle.legal.remove( (y_row,x_col) )
         game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
 
@@ -187,22 +199,52 @@ if __name__ == '__main__':
     turn = 1
 
     while True:
+        print('TURN {}'.format(turn),file=sys.stderr)
         game_board[MY_ID] = Board(game_board[MY_ID])
         game_board[OPP_ID] = Board(game_board[OPP_ID])
         update(game_board[MY_ID],game_board[OPP_ID])
 
+        if turn == 8 :
+            puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
+            puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
+            if puzzle.finish == None :
+                y_row , x_col = puzzle.coord_random()
+                puzzle.finish = y_row, x_col
+
+            solution = puzzle.solve()
+            if solution is None :
+                # TODO: WARNING : Write a state in this case
+                print("MamaMia",file=sys.stderr)
+
+                game_board[MY_ID].treasure_map = TREASURE_MAP
+                game_board[MY_ID].write_surface()
+                game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
+
+            elif len(solution) != (DEEP + 1) :
+                # TODO: WARNING : Write a state in this case
+                print("Solution is less then 7",file=sys.stderr)
+
+                game_board[MY_ID].treasure_map = TREASURE_MAP
+                game_board[MY_ID].write_surface()
+                game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
+
+            else :
+                turn = 1
+
         t_check_map(game_board[MY_ID].treasure_map)
 
         sonar_result = input()
-        print(sonar_result, file=sys.stderr)
+        #print(sonar_result, file=sys.stderr)
         opponent_orders = input()
-        print(opponent_orders, file=sys.stderr)
+        #print(opponent_orders, file=sys.stderr)
 
-        y_row , x_col = puzzle.read_turn(solution,turn)
-        game_board[MY_ID].treasure_map[x_col][y_row] = ' '
-        dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-        game_board[MY_ID].write_move(dir,'TORPEDO')
+        if turn > 0 and turn < 8 :
+            y_row , x_col = puzzle.read_turn(solution,turn)
+            game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
+            dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+            game_board[MY_ID].write_move(dir,'TORPEDO')
+            turn += 1
+
         print(game_board[MY_ID].out)
 
-        turn += 1
         #print("MOVE N TORPEDO")
