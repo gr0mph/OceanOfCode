@@ -112,7 +112,7 @@ class StalkAndLegal():
     def __init__(self,clone):
         self.legal = set()
         if clone is not None:
-            self.legal = copy.deepcopy(clone.puzzle)
+            self.legal = copy.deepcopy(clone.legal)
 
     def __str__(self):
         text = ''
@@ -127,7 +127,7 @@ class StalkAndLegal():
                     self.legal.add((y_row, x_col))
 
     def read_move(self,point,dy_row,dx_col):
-        new_coord = point.y + dy_row , point.x + dx_row
+        new_coord = point.y + dy_row , point.x + dx_col
         if new_coord in self.legal:
             self.legal.remove(new_coord)
             return True
@@ -162,7 +162,7 @@ class StalkAndTorpedo():
                     self.inp.add((new_board,new_stalk))
 
     def update(self,action,data):
-        self.action(data)
+        action(self,data)
 
     def read_move(self,data):
         d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
@@ -171,7 +171,7 @@ class StalkAndTorpedo():
             if result == True :
                 board.x, board.y = board.x + dx_col, board.y + dy_row
                 board.treasure_map[board.y + dy_row][board.x + dx_col] = 'D'
-                self.out.add()
+                self.out.add( (board,stalk) )
 
 
 
