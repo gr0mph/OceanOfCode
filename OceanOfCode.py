@@ -107,13 +107,79 @@ class HamiltonSolver:
                 legal_add(path_pop())
                 dirs_pop()
 
+class StalkAndLegal():
+
+    def __init__(self,clone):
+        self.legal = set()
+        if clone is not None:
+            self.legal = copy.deepcopy(clone.puzzle)
+
+    def set_up(self,TREASURE_MAP):
+        for y_row, row in enumerate(TREASURE_MAP):
+            for x_col, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    self.legal.add((y_row, x_col))
+
+    def read_move(self,point,dy_row,dx_col):
+        new_coord = point.y + dy_row , point.x + dx_row
+        if new_coord in self.legal:
+            self.legal.remove(new_coord)
+            return True
+        return False
+
+class StalkAndTorpedo():
+
+    def __init__(self,clone):
+        self.in = set()
+        self.out = set()
+        if clone is not None :
+            self.in = clone.out
+
+    def __str__(self):
+        text = ''
+        for board_in in self.in:
+            text = '{}\n({},{},life{})'.format(text,board_in.x, board_in.y, board_in.life)
+        return text
+
+    def set_up(self,TREASURE_MAP):
+        for y_row, row in enumerate(TREASURE_MAP):
+            for x_col, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    new_board = Board(None)
+                    new_board.x, new_board.y = x_col, y_row
+                    new_board.treasure_map[new_board.y][new_board.x] = 'D'
+
+                    new_stalk = StalkAndLegal(None):
+                    new_stalk.set_up(new_board.treasure_map)
+
+                    self.in.add((new_board,new_stalk))
+
+    def update(self,action,data):
+        self.action(data)
+
+    def read_move(self,data):
+        d, dy_row, dx_col = next( d, r, c for d, r, c in DIRS if d == data )
+        for board,stalk in self.in:
+            result = stalk.read_move(board,dy_row,dx_col)
+            if result == True :
+                board.x, board.y = board.x + dx_col, board.y + dy_row
+                board.treasure_map[board.y + dy_row][board.x + dx_col] = 'D'
+                self.out.add()
 
 
-class Submarine():
+
+class Point():
+
+    def __init__(self,clone):
+        self.x, self.y = 0, 0
+        if clone is not None:
+            self.x, self.y = clone.x, clone.y
+
+class Submarine(Point):
 
     def __init__(self,clone):
         self.out = ''
-        self.x, self.y = 0, 0
+        super().__init__(clone)
         if clone is not None :
             self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
@@ -160,7 +226,7 @@ class Board(Submarine):
     def __init__(self,clone):
         super().__init__(clone)
         self.turn = 0
-        self.x , self.y , self.life = 0, 0, 0
+        self.x , self.y , self.life = 0, 0, 6
         self.torpedo, self.sonar, self.silence, self.mine = 0, 0, 0, 0
         if clone is not None:
             self.turn = clone.turn + 1
@@ -170,6 +236,10 @@ class Board(Submarine):
 
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
+
+def manhattan(obj1,obj2):
+    distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
+    return distance
 
 def path_solving(game_board,puzzle):
     game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
@@ -231,7 +301,7 @@ if __name__ == '__main__':
         sonar_result = input()
         #print(sonar_result, file=sys.stderr)
         opponent_orders = input()
-        #print(opponent_orders, file=sys.stderr)
+        print(opponent_orders, file=sys.stderr)
 
         if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)
