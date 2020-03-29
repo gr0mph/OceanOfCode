@@ -18,6 +18,7 @@ EMPTY_SYMBOLS = '.'
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 GET_DIRS = { (-1,0) : 'N' , (1,0) : 'S' , (0,1) : 'E' , (0,-1) : 'W' }
 
+OPPONENT_SET = set()
 
 def read_map():
     global WIDTH, HEIGHT, MY_ID, OPP_ID
@@ -32,7 +33,7 @@ def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
-DEEP = 3
+DEEP = 9
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -91,10 +92,8 @@ class HamiltonSolver:
                     legal_remove(new_coord)
                     dirs_append(iter(DIRS))
                     if len(path) > DEEP :
-                        print("HERE1",file=sys.stderr)
                         return path
                     if not legal:
-                        print("HERE2",file=sys.stderr)
                         return path
                     break
 
@@ -108,6 +107,8 @@ class HamiltonSolver:
                 legal_add(path_pop())
                 dirs_pop()
 
+
+
 class Submarine():
 
     def __init__(self,clone):
@@ -116,7 +117,7 @@ class Submarine():
         if clone is not None :
             self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
-            self.treasure_map = TREASURE_MAP
+            self.treasure_map = copy.deepcopy(TREASURE_MAP)
 
     @property
     def sector(self):
@@ -170,26 +171,30 @@ class Board(Submarine):
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
 
-if __name__ == '__main__':
-    read_map()
-    game_board[MY_ID] = Board(game_board[MY_ID])
-    game_board[MY_ID].treasure_map = copy.deepcopy(TREASURE_MAP)
-    puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
-    if puzzle.start == None :
-        y_row , x_col = puzzle.coord_random()
-        puzzle.start = y_row, x_col
-        game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
-        puzzle.legal.remove( (y_row,x_col) )
-        game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
+def path_solving(game_board,puzzle):
+    game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
+    puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
 
-    # TODO PRINT
-    print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
-
+    # TODO: Idea but not finished or not done good result
     if puzzle.finish == None :
         y_row , x_col = puzzle.coord_random()
         puzzle.finish = y_row, x_col
 
     solution = puzzle.solve()
+    return game_board, puzzle, solution
+
+if __name__ == '__main__':
+    read_map()
+    game_board[MY_ID] = Board(game_board[MY_ID])
+    puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
+    y_row , x_col = puzzle.coord_random()
+    puzzle.legal.remove( (y_row,x_col) )
+    game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
+    game_board, puzzle, solution = path_solving(game_board,puzzle)
+
+    # TODO PRINT
+    print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
+
     turn = 1
 
     while True:
@@ -198,14 +203,10 @@ if __name__ == '__main__':
         game_board[OPP_ID] = Board(game_board[OPP_ID])
         update(game_board[MY_ID],game_board[OPP_ID])
 
-        if turn == 8 :
+        if turn == DEEP + 1 :
             puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
-            puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
-            if puzzle.finish == None :
-                y_row , x_col = puzzle.coord_random()
-                puzzle.finish = y_row, x_col
+            game_board, puzzle, solution = path_solving(game_board,puzzle)
 
-            solution = puzzle.solve()
             if solution is None :
                 # TODO: WARNING : Write a state in this case
                 print("MamaMia",file=sys.stderr)
@@ -232,7 +233,7 @@ if __name__ == '__main__':
         opponent_orders = input()
         #print(opponent_orders, file=sys.stderr)
 
-        if turn > 0 and turn < 8 :
+        if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)
             game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
             dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
