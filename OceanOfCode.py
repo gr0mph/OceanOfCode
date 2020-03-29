@@ -114,6 +114,12 @@ class StalkAndLegal():
         if clone is not None:
             self.legal = copy.deepcopy(clone.puzzle)
 
+    def __str__(self):
+        text = ''
+        for y_row, x_col in self.legal:
+            text = '{} ({},{})'.format(text,x_col,y_row)
+        return text
+
     def set_up(self,TREASURE_MAP):
         for y_row, row in enumerate(TREASURE_MAP):
             for x_col, item in enumerate(row):
@@ -130,14 +136,14 @@ class StalkAndLegal():
 class StalkAndTorpedo():
 
     def __init__(self,clone):
-        self.in = set()
         self.out = set()
+        self.inp = set()
         if clone is not None :
-            self.in = clone.out
+            self.inp = clone.out
 
     def __str__(self):
         text = ''
-        for board_in in self.in:
+        for board_in in self.inp:
             text = '{}\n({},{},life{})'.format(text,board_in.x, board_in.y, board_in.life)
         return text
 
@@ -149,17 +155,17 @@ class StalkAndTorpedo():
                     new_board.x, new_board.y = x_col, y_row
                     new_board.treasure_map[new_board.y][new_board.x] = 'D'
 
-                    new_stalk = StalkAndLegal(None):
+                    new_stalk = StalkAndLegal(None)
                     new_stalk.set_up(new_board.treasure_map)
 
-                    self.in.add((new_board,new_stalk))
+                    self.inp.add((new_board,new_stalk))
 
     def update(self,action,data):
         self.action(data)
 
     def read_move(self,data):
-        d, dy_row, dx_col = next( d, r, c for d, r, c in DIRS if d == data )
-        for board,stalk in self.in:
+        d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
+        for board,stalk in self.inp:
             result = stalk.read_move(board,dy_row,dx_col)
             if result == True :
                 board.x, board.y = board.x + dx_col, board.y + dy_row
@@ -168,21 +174,15 @@ class StalkAndTorpedo():
 
 
 
-class Point():
-
-    def __init__(self,clone):
-        self.x, self.y = 0, 0
-        if clone is not None:
-            self.x, self.y = clone.x, clone.y
-
-class Submarine(Point):
+class Submarine():
 
     def __init__(self,clone):
         self.out = ''
-        super().__init__(clone)
         if clone is not None :
+            self.x, self.y = clone.x, clone.y
             self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
+            self.x, self.y = 0, 0
             self.treasure_map = copy.deepcopy(TREASURE_MAP)
 
     @property
