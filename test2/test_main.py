@@ -19,3 +19,6 @@ TREASURE_MAP.append(list('.....xx........'))
 TREASURE_MAP.append(list('.....xx........'))
 TREASURE_MAP.append(list('.....xx........'))
 TREASURE_MAP.append(list('.....xx........'))
+
+#for t in TREASURE_MAP:
+#    print(t)

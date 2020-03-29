@@ -143,7 +143,7 @@ class StalkAndTorpedo():
 
     def __str__(self):
         text = ''
-        for board_in in self.inp:
+        for board_in, stalk_in in self.inp:
             text = '{}\n({},{},life{})'.format(text,board_in.x, board_in.y, board_in.life)
         return text
 
@@ -153,6 +153,7 @@ class StalkAndTorpedo():
                 if item in EMPTY_SYMBOLS:
                     new_board = Board(None)
                     new_board.x, new_board.y = x_col, y_row
+                    new_board.treasure_map = copy.deepcopy(TREASURE_MAP)
                     new_board.treasure_map[new_board.y][new_board.x] = 'D'
 
                     new_stalk = StalkAndLegal(None)
@@ -179,6 +180,7 @@ class Submarine():
     def __init__(self,clone):
         self.out = ''
         if clone is not None :
+            print('Already')
             self.x, self.y = clone.x, clone.y
             self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
