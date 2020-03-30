@@ -30,13 +30,27 @@ class _staling(unittest.TestCase):
         print(len(me.inp))
 
         read_move = StalkAndTorpedo.read_move
+
         me.update(read_move,'N')
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-        #me.update(read_move,'E')
-        #me = StalkAndTorpedo(me)
-        #print(len(me.inp))
+        me.update(read_move,'E')
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_move,'S')
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_move,'S')
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_move,'W')
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
 
 
 if __name__ == '__main__':

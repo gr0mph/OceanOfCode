@@ -170,10 +170,8 @@ class StalkAndTorpedo():
             result = stalk.read_move(board,dy_row,dx_col)
             if result == True :
                 board.x, board.y = board.x + dx_col, board.y + dy_row
-                board.treasure_map[board.y + dy_row][board.x + dx_col] = 'D'
+                board.treasure_map[board.y][board.x] = 'D'
                 self.out.add( (board,stalk) )
-
-
 
 class Submarine():
 
