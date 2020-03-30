@@ -25,7 +25,7 @@
 
 **Stalk annd torpedo**
 
-- [ ] Create a set of possible submarine
+- [x] Create a set of possible submarine
 - [ ] On each turn update set and delete impossible Submarine
 - [ ] Find the good submarine
 - [ ] Torpedo it
