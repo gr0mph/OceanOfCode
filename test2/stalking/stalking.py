@@ -72,7 +72,7 @@ class _staling(unittest.TestCase):
         print()
         print(len(me.inp))
 
-    def test_read_torpedo(self):
+    def _read_torpedo(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
         print(len(me.inp))
@@ -87,7 +87,25 @@ class _staling(unittest.TestCase):
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
+    def test_read_silence(self):
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+        print(len(me.inp))
 
+        read_torpedo = StalkAndTorpedo.read_torpedo
+        read_silence = StalkAndTorpedo.read_silence
+
+        me.update(read_torpedo,(8,4))
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_torpedo,(5,6))
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_silence,None)
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
 
 
 

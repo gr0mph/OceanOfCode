@@ -140,6 +140,15 @@ class StalkAndLegal():
         new_coord = submarine.y , submarine.x
         self.legal.remove(new_coord)
 
+    def read_silence(self,board1,length1,dy_row,dx_col):
+        for i1 in range(1,length1+1):
+            new_coord = board1.y + i1 * dy_row , board1.x + i1 * dx_col
+            if new_coord in self.legal:
+                self.legal.remove(new_coord)
+            else :
+                return False
+        return True
+
 class StalkAndTorpedo():
 
     def __init__(self,clone):
@@ -197,7 +206,19 @@ class StalkAndTorpedo():
                 self.out.add( (board,stalk) )
 
     def read_silence(self,data):
-        pass
+        for board, stalk in self.inp:
+            # Length 0
+            self.out.add( (board, stalk))
+
+            for orientation, dy_row, dx_col in DIRS:
+                for length1 in range(1,5):
+                    board1, stalk1 = Board(board), StalkAndLegal(stalk)
+                    result = stalk1.read_silence(board1,length1,dy_row,dx_col)
+                    if result == True :
+                        for i2 in range( 1, length1 + 1 ):
+                            board.treasure_map[board.y + i2 * dy_row][board.x + i2 * dx_col] = 'D'
+                        board.x, board.y = board.x + length1 * dx_col, board.y + length1 * dy_row
+                        self.out.add( (board1,stalk1) )
 
 class Point():
 
@@ -209,7 +230,6 @@ class Submarine():
     def __init__(self,clone):
         self.out = ''
         if clone is not None :
-            print('Already')
             self.x, self.y = clone.x, clone.y
             self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
