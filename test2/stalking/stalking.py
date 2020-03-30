@@ -15,6 +15,9 @@ from OceanOfCode import Board
 from OceanOfCode import EMPTY_SYMBOLS
 from OceanOfCode import DIRS
 
+# Method
+from OceanOfCode import manhattan
+
 import unittest
 
 class _staling(unittest.TestCase):
@@ -51,7 +54,7 @@ class _staling(unittest.TestCase):
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-    def test_read_surface(self):
+    def _read_surface(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
 
@@ -68,6 +71,23 @@ class _staling(unittest.TestCase):
         me = StalkAndTorpedo(me)
         print()
         print(len(me.inp))
+
+    def test_read_torpedo(self):
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+        print(len(me.inp))
+
+        read_torpedo = StalkAndTorpedo.read_torpedo
+
+        me.update(read_torpedo,(8,4))
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_torpedo,(6,6))
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+
 
 
 

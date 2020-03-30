@@ -188,6 +188,21 @@ class StalkAndTorpedo():
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
 
+    def read_torpedo(self,data):
+        x, y = data
+        point = Point(x,y)
+        for board, stalk in self.inp:
+            distance = manhattan(board,point)
+            if distance <= 4 :
+                self.out.add( (board,stalk) )
+
+    def read_silence(self,data):
+        pass
+
+class Point():
+
+    def __init__(self,x,y):
+        self.x, self.y = x, y
 
 class Submarine():
 
