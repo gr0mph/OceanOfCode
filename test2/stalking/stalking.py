@@ -19,12 +19,12 @@ import unittest
 
 class _staling(unittest.TestCase):
 
-    def test_set_up(self):
+    def _set_up(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
         print(len(me.inp))
 
-    def test_set_up(self):
+    def _read_move(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
         print(len(me.inp))
@@ -50,6 +50,27 @@ class _staling(unittest.TestCase):
         me.update(read_move,'W')
         me = StalkAndTorpedo(me)
         print(len(me.inp))
+
+    def test_read_surface(self):
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+
+        read_surface = StalkAndTorpedo.read_surface
+
+        for i in range(0,5):
+            me.update(read_surface,TREASURE_MAP)
+            me = StalkAndTorpedo(me)
+            board, stalk = next(iter(me.inp))
+            print(len(me.inp))
+            print(board.life)
+
+        me.update(read_surface,TREASURE_MAP)
+        me = StalkAndTorpedo(me)
+        print()
+        print(len(me.inp))
+
+
+
 
 
 

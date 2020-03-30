@@ -124,6 +124,7 @@ class StalkAndLegal():
         for y_row, row in enumerate(TREASURE_MAP):
             for x_col, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:
+                    #print('({},{})'.format(y_row,x_col))
                     self.legal.add((y_row, x_col))
 
     def read_move(self,point,dy_row,dx_col):
@@ -132,6 +133,12 @@ class StalkAndLegal():
             self.legal.remove(new_coord)
             return True
         return False
+
+    def read_surface(self,submarine):
+        self.legal.clear()
+        self.set_up(submarine.treasure_map)
+        new_coord = submarine.y , submarine.x
+        self.legal.remove(new_coord)
 
 class StalkAndTorpedo():
 
@@ -172,6 +179,15 @@ class StalkAndTorpedo():
                 board.x, board.y = board.x + dx_col, board.y + dy_row
                 board.treasure_map[board.y][board.x] = 'D'
                 self.out.add( (board,stalk) )
+
+    def read_surface(self,data):
+        for board, stalk in self.inp:
+            board.life -= 1
+            if board.life > 0 :
+                board.treasure_map = copy.deepcopy(data)
+                stalk.read_surface(board)
+                self.out.add( (board,stalk) )
+
 
 class Submarine():
 
