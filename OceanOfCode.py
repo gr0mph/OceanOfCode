@@ -220,6 +220,15 @@ class StalkAndTorpedo():
                         board.x, board.y = board.x + length1 * dx_col, board.y + length1 * dy_row
                         self.out.add( (board1,stalk1) )
 
+READ_COMMAND = [
+( 'MOVE' , StalkAndTorpedo.read_move ),
+( 'SURFACE' , StalkAndTorpedo.read_surface ),
+( 'TORPEDO' , StalkAndTorpedo.read_torpedo ),
+( 'SONAR' , None ),
+( 'SILENCE' , StalkAndTorpedo.read_silence )
+]
+
+
 class Point():
 
     def __init__(self,x,y):
@@ -330,7 +339,6 @@ if __name__ == '__main__':
 
             if solution is None :
                 # TODO: WARNING : Write a state in this case
-                print("MamaMia",file=sys.stderr)
 
                 game_board[MY_ID].treasure_map = TREASURE_MAP
                 game_board[MY_ID].write_surface()
@@ -338,7 +346,6 @@ if __name__ == '__main__':
 
             elif len(solution) != (DEEP + 1) :
                 # TODO: WARNING : Write a state in this case
-                print("Solution is less then 7",file=sys.stderr)
 
                 game_board[MY_ID].treasure_map = TREASURE_MAP
                 game_board[MY_ID].write_surface()
