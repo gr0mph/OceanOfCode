@@ -19,13 +19,16 @@ from OceanOfCode import Board
 # Global
 from OceanOfCode import READ_COMMAND
 
+# Method
+from OceanOfCode import update_order
+
 import unittest
 
 h_command = { ('MOVE')}
 
 class _reading(unittest.TestCase):
 
-    def test_simple(self):
+    def _simple(self):
 
         text1 = TEXT1.split('|')
         print(text1)
@@ -45,7 +48,7 @@ class _reading(unittest.TestCase):
             else :
                 print("NO")
 
-    def test_use_read_command(self):
+    def _use_read_command(self):
 
         text1 = TEXT1.split('|')
         for t in text1:
@@ -62,17 +65,19 @@ class _reading(unittest.TestCase):
             command = next( (c1,f1) for c1,f1 in READ_COMMAND if t.find(c1) != -1 )
             print(command)
 
-    def test_use_read_command2(self):
+    def _use_read_command2(self):
         text6 = TEXT6.split('|')
         t = ''
         for t in text6:
             command = next( (c1,f1) for c1,f1 in READ_COMMAND if t.find(c1) != -1 )
             print(command)
-            data1 = t.split(' ')
-            for d1 in data1:
-                print(d1)
+            t_list = t.split(' ')
+            c1,d1 = t_list[0], t_list[1:]
+            print("command: {} data: {}".format(c1,d1))
 
-
+    def test_with_method(self):
+        for c1, f1, d1 in update_order(TEXT6):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
 
 
 if __name__ == '__main__':

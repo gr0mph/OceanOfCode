@@ -297,6 +297,14 @@ class Board(Submarine):
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
 
+def update_order(text):
+    text, t1 = text.split('|'), ''
+    for t1 in text:
+        c1, f1 = next( (c1,f1) for c1,f1 in READ_COMMAND if t1.find(c1) != -1 )
+        t_list = t1.split(' ')
+        _,d1 = t_list[0], t_list[1:]
+        yield c1, f1, d1
+
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
     return distance
