@@ -17,6 +17,7 @@ from OceanOfCode import DIRS
 
 # Method
 from OceanOfCode import manhattan
+from OceanOfCode import update_order
 
 import unittest
 
@@ -34,23 +35,23 @@ class _staling(unittest.TestCase):
 
         read_move = StalkAndTorpedo.read_move
 
-        me.update(read_move,'N')
+        me.update(read_move,['N'])
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-        me.update(read_move,'E')
+        me.update(read_move,['E'])
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-        me.update(read_move,'S')
+        me.update(read_move,['S'])
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-        me.update(read_move,'S')
+        me.update(read_move,['S'])
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-        me.update(read_move,'W')
+        me.update(read_move,['W'])
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
@@ -87,7 +88,7 @@ class _staling(unittest.TestCase):
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-    def test_read_silence(self):
+    def _read_silence(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
         print(len(me.inp))
@@ -108,6 +109,45 @@ class _staling(unittest.TestCase):
         print(len(me.inp))
 
 
+    def _small_read_and_update(self):
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+        print(len(me.inp))
+
+        for c1, f1, d1 in update_order('MOVE N'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+            me.update(f1,d1)
+            me = StalkAndTorpedo(me)
+
+        print(len(me.inp))
+
+        for c1, f1, d1 in update_order('TORPEDO 0 0|MOVE E'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+            me.update(f1,d1)
+            me = StalkAndTorpedo(me)
+
+        print(len(me.inp))
+
+        for c1, f1, d1 in update_order('SURFACE 1'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+            me.update(f1,d1)
+            me = StalkAndTorpedo(me)
+
+        print(len(me.inp))
+
+
+    def test_medium_read_and_update(self):
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+        print(len(me.inp))
+
+        for c1, f1, d1 in update_order('MOVE N|SURFACE 5|TORPEDO 11 1|SILENCE'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+            if f1 is not None:
+                me.update(f1,d1)
+                me = StalkAndTorpedo(me)
+
+        print(len(me.inp))
 
 
 

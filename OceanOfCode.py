@@ -152,9 +152,11 @@ class StalkAndLegal():
 class StalkAndTorpedo():
 
     def __init__(self,clone):
+        self.treasure_map = None
         self.out = set()
         self.inp = set()
         if clone is not None :
+            self.treasure_map = clone.treasure_map
             self.inp = clone.out
 
     def __str__(self):
@@ -164,6 +166,7 @@ class StalkAndTorpedo():
         return text
 
     def set_up(self,TREASURE_MAP):
+        self.treasure_map = TREASURE_MAP
         for y_row, row in enumerate(TREASURE_MAP):
             for x_col, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:
@@ -181,6 +184,7 @@ class StalkAndTorpedo():
         action(self,data)
 
     def read_move(self,data):
+        data = data[0]
         d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
         for board,stalk in self.inp:
             result = stalk.read_move(board,dy_row,dx_col)
@@ -193,12 +197,12 @@ class StalkAndTorpedo():
         for board, stalk in self.inp:
             board.life -= 1
             if board.life > 0 :
-                board.treasure_map = copy.deepcopy(data)
+                board.treasure_map = copy.deepcopy(self.treasure_map)
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
 
     def read_torpedo(self,data):
-        x, y = data
+        x, y = int(data[0]), int(data[1])
         point = Point(x,y)
         for board, stalk in self.inp:
             distance = manhattan(board,point)
@@ -330,6 +334,9 @@ if __name__ == '__main__':
     game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
     game_board, puzzle, solution = path_solving(game_board,puzzle)
 
+    kanban_opp = StalkAndTorpedo(None)
+    kanban_opp.set_up(TREASURE_MAP)
+
     # TODO PRINT
     print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
 
@@ -367,7 +374,12 @@ if __name__ == '__main__':
         sonar_result = input()
         #print(sonar_result, file=sys.stderr)
         opponent_orders = input()
-        print(opponent_orders, file=sys.stderr)
+        for c1, f1, d1 in update_order(opponent_orders):
+            if f1 is not None:
+                kanban_opp.update(f1,d1)
+                kanban_opp = StalkAndTorpedo(kanban_opp)
+                        
+        #print(opponent_orders, file=sys.stderr)
 
         if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)
