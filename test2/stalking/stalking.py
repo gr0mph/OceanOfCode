@@ -136,7 +136,7 @@ class _staling(unittest.TestCase):
         print(len(me.inp))
 
 
-    def test_medium_read_and_update(self):
+    def _medium_read_and_update(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
         print(len(me.inp))
@@ -149,6 +149,14 @@ class _staling(unittest.TestCase):
 
         print(len(me.inp))
 
+    def test_na_read(self):
+
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+        print(len(me.inp))
+
+        for c1, f1, d1 in update_order('NA'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
 
 
 

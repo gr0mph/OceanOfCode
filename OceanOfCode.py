@@ -3,6 +3,7 @@ import math
 import copy
 import random
 import time
+import gc
 
 game_board = [ None , None ]
 movement_f = { 'N': None,'S': None,'E': None,'W': None }
@@ -33,7 +34,7 @@ def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
-DEEP = 9
+DEEP = 10
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -71,7 +72,6 @@ class HamiltonSolver:
         path = [self.start]
         dirs = copy.deepcopy(DIRS)
         random.shuffle(dirs)
-        #dirs = [iter(DIRS)]
         dirs = [iter(dirs)]
 
         # Cache attribute lookups in local variables
@@ -141,10 +141,11 @@ class StalkAndLegal():
         self.legal.remove(new_coord)
 
     def read_silence(self,board1,length1,dy_row,dx_col):
+        legal_remove = self.legal.remove
         for i1 in range(1,length1+1):
             new_coord = board1.y + i1 * dy_row , board1.x + i1 * dx_col
             if new_coord in self.legal:
-                self.legal.remove(new_coord)
+                legal_remove(new_coord)
             else :
                 return False
         return True
@@ -156,7 +157,6 @@ class StalkAndTorpedo():
         self.out = set()
         self.inp = set()
         if clone is not None :
-            self.treasure_map = clone.treasure_map
             self.inp = clone.out
 
     def __str__(self):
@@ -166,17 +166,14 @@ class StalkAndTorpedo():
         return text
 
     def set_up(self,TREASURE_MAP):
-        self.treasure_map = TREASURE_MAP
         for y_row, row in enumerate(TREASURE_MAP):
             for x_col, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:
                     new_board = Board(None)
                     new_board.x, new_board.y = x_col, y_row
-                    new_board.treasure_map = copy.deepcopy(TREASURE_MAP)
-                    new_board.treasure_map[new_board.y][new_board.x] = 'D'
 
                     new_stalk = StalkAndLegal(None)
-                    new_stalk.set_up(new_board.treasure_map)
+                    new_stalk.set_up(TREASURE_MAP)
 
                     self.inp.add((new_board,new_stalk))
 
@@ -190,14 +187,14 @@ class StalkAndTorpedo():
             result = stalk.read_move(board,dy_row,dx_col)
             if result == True :
                 board.x, board.y = board.x + dx_col, board.y + dy_row
-                board.treasure_map[board.y][board.x] = 'D'
                 self.out.add( (board,stalk) )
 
     def read_surface(self,data):
         for board, stalk in self.inp:
             board.life -= 1
             if board.life > 0 :
-                board.treasure_map = copy.deepcopy(self.treasure_map)
+                # Reset TREASURE MAP for board, don't know If it's very necessary
+                board.treasure_map = copy.deepcopy(TREASURE_MAP)
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
 
@@ -210,19 +207,23 @@ class StalkAndTorpedo():
                 self.out.add( (board,stalk) )
 
     def read_silence(self,data):
-        for board, stalk in self.inp:
-            # Length 0
-            self.out.add( (board, stalk))
+        out_add = self.out.add
+        if len(self.inp) >= 9 :
+            self.set_up(TREASURE_MAP)
+            self.out = self.inp
 
-            for orientation, dy_row, dx_col in DIRS:
-                for length1 in range(1,5):
-                    board1, stalk1 = Board(board), StalkAndLegal(stalk)
-                    result = stalk1.read_silence(board1,length1,dy_row,dx_col)
-                    if result == True :
-                        for i2 in range( 1, length1 + 1 ):
-                            board.treasure_map[board.y + i2 * dy_row][board.x + i2 * dx_col] = 'D'
-                        board.x, board.y = board.x + length1 * dx_col, board.y + length1 * dy_row
-                        self.out.add( (board1,stalk1) )
+        else :
+            for board, stalk in self.inp:
+                # Length 0
+                out_add( (board, stalk))
+
+                for orientation, dy_row, dx_col in DIRS:
+                    for length1 in range(1,5):
+                        board1, stalk1 = Board(board), StalkAndLegal(stalk)
+                        result = stalk1.read_silence(board1,length1,dy_row,dx_col)
+                        if result == True :
+                            board.x, board.y = board.x + length1 * dx_col, board.y + length1 * dy_row
+                            self.out.add( (board1,stalk1) )
 
 READ_COMMAND = [
 ( 'MOVE' , StalkAndTorpedo.read_move ),
@@ -304,10 +305,14 @@ def update(me,opp):
 def update_order(text):
     text, t1 = text.split('|'), ''
     for t1 in text:
-        c1, f1 = next( (c1,f1) for c1,f1 in READ_COMMAND if t1.find(c1) != -1 )
-        t_list = t1.split(' ')
-        _,d1 = t_list[0], t_list[1:]
-        yield c1, f1, d1
+        print(". update order: {}".format(t1), flush = True, file=sys.stderr)
+        try:
+            c1, f1 = next( (c1,f1) for c1,f1 in READ_COMMAND if t1.find(c1) != -1 )
+            t_list = t1.split(' ')
+            _,d1 = t_list[0], t_list[1:]
+            yield c1, f1, d1
+        except:
+            return
 
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
@@ -369,17 +374,30 @@ if __name__ == '__main__':
             else :
                 turn = 1
 
-        t_check_map(game_board[MY_ID].treasure_map)
+        #t_check_map(game_board[MY_ID].treasure_map)
 
         sonar_result = input()
-        #print(sonar_result, file=sys.stderr)
+        print(sonar_result, file=sys.stderr)
         opponent_orders = input()
+        if opponent_orders is None:
+            print("What the fuck ?", file=sys.stderr)
         for c1, f1, d1 in update_order(opponent_orders):
             if f1 is not None:
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
-                        
-        #print(opponent_orders, file=sys.stderr)
+
+        print("Len Kanban Board {} Torpedo {}".format(len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
+
+        if game_board[MY_ID].torpedo == 0 and len(kanban_opp.inp) <= 20 :
+
+            print("Search for torpedo",file=sys.stderr)
+
+            for s1,_ in kanban_opp.inp :
+                distance = manhattan(s1,game_board[MY_ID])
+                if  distance >= 2 and distance <= 4 :
+                    game_board[MY_ID].write_torpedo(s1.x,s1.y)
+                    break
+
 
         if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)

@@ -27,5 +27,15 @@
 
 - [x] Create a set of possible submarine
 - [x] On each turn update set and delete impossible Submarine
+- [ ] Find a bug ... (no submarine)
 - [ ] Find the good submarine
 - [ ] Torpedo it
+
+**Add missile**
+
+- [ ] Read rule of missile
+
+**Implement strategy**
+
+- [ ] ***Easy*** Implement Design Pattern strategy
+- [ ] ***Hard*** Implement Deep Q for strategy (what states...)
