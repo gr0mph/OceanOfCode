@@ -33,7 +33,8 @@
 
 **Add missile**
 
-- [ ] Read rule of missile
+- [x] Read rule of missile
+- [ ] Add class to implement them
 
 **Implement strategy**
 
