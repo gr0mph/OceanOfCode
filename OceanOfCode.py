@@ -113,6 +113,52 @@ class HamiltonSolver:
                 legal_add(path_pop())
                 dirs_pop()
 
+class MineAndTrigger():
+
+    def __init__(self,clone):
+        self.treasure_map = None
+        self.out = set()
+        self.inp = set()
+        self.legal = set()
+        if clone is not None :
+            self.inp = clone.out
+            self.legal = clone.legal
+            self.treasure_map = clone.treasure_map
+
+    def set_up(self,TREASURE_MAP):
+        self.treasure_map = TREASURE_MAP
+        for y_row, row in enumerate(self.treasure_map):
+            for x_col, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    self.legal.add((r, c))
+
+    def mine(self,board):
+        mine = Point(None)
+        dirs = [iter(DIRS)]
+        orientation, y_drow, x_dcol = '', 0, 0
+        for orientation, y_drow, x_dcol in dirs[-1]:
+            new_coord = board.y + y_drow, board.x + x_dcol
+            if new_coord in self.legal:
+                self.legal.remove(new_coord)
+                break
+
+        if orientation == '' :
+            return None
+
+        mine.y, mine.x = board.y + y_drow, board.x + x_dcol
+        self.out.add(mine)
+        return orientation
+
+    def trigger(self,mine):
+        new_coord = mine.y, mine.x
+        self.legal.add(new_coord)
+        self.out.remove(mine)
+
+    def __iter__(self):
+        for m1 in self.inp:
+            yield m1
+
+
 class StalkAndLegal():
 
     def __init__(self,clone):
@@ -157,38 +203,6 @@ class StalkAndLegal():
                 return False
         return True
 
-class MineAndTrigger():
-
-    def __init__(self,clone):
-        self.treasure_map = None
-        self.out = set()
-        self.inp = set()
-        self.legal = set()
-        if clone is not None :
-            self.inp = clone.out
-            self.legal = clone.legal
-            self.treasure_map = clone.treasure_map
-
-    def set_up(self,TREASURE_MAP):
-        self.treasure_map = TREASURE_MAP
-        for y_row, row in enumerate(self.treasure_map):
-            for x_col, item in enumerate(row):
-                if item in EMPTY_SYMBOLS:
-                    self.legal.add((r, c))
-
-
-    def mine(self,board):
-        mine = Point(None)
-        mine.x, mine.y = board.x, board.y
-        self.out.add(mine)
-        # Return direction
-
-    def trigger(self,mine):
-        self.out.remove(mine)
-
-    def __iter__(self):
-        for m1 in self.inp:
-            yield m1
 
 class StalkAndTorpedo():
 
@@ -408,7 +422,7 @@ if __name__ == '__main__':
     kanban_opp = StalkAndTorpedo(None)
     kanban_opp.set_up(TREASURE_MAP)
 
-    # TODO PRINT
+
     print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
 
     turn = 1
@@ -457,7 +471,8 @@ if __name__ == '__main__':
         #    for b1,s1 in kanban_opp.inp:
         #        print("submarin x {} y {}".format(b1.x,b1.y),file=sys.stderr)
 
-
+        if game_board[MY_ID].mine == 0 :
+            pass
 
         if game_board[MY_ID].torpedo == 0 and len(kanban_opp.inp) <= 20 :
 
