@@ -154,6 +154,9 @@ class MineAndTrigger():
         self.legal.add(new_coord)
         self.out.remove(mine)
 
+    def nearby(self,board):
+        pass
+
     def __iter__(self):
         for m1 in self.inp:
             yield m1
