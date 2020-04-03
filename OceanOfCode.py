@@ -5,8 +5,14 @@ import random
 import time
 import gc
 
+AGENT_TORPEDO = 0   # 3,2,1,0
+#AGENT_SONAR = 1
+AGENT_SILENCE = 1
+AGENT_MINE = 2
+
 game_board = [ None , None ]
 movement_f = { 'N': None,'S': None,'E': None,'W': None }
+select_a = [ 'TORPEDO' , 'SILENCE' , 'MINE' ]
 
 WIDTH, HEIGHT, MY_ID, OPP_ID = 0 , 0, 0, 0
 TREASURE_MAP = []
@@ -141,14 +147,48 @@ class StalkAndLegal():
         self.legal.remove(new_coord)
 
     def read_silence(self,board1,length1,dy_row,dx_col):
+        legal = self.legal
         legal_remove = self.legal.remove
         for i1 in range(1,length1+1):
             new_coord = board1.y + i1 * dy_row , board1.x + i1 * dx_col
-            if new_coord in self.legal:
+            if new_coord in legal:
                 legal_remove(new_coord)
             else :
                 return False
         return True
+
+class MineAndTrigger():
+
+    def __init__(self,clone):
+        self.treasure_map = None
+        self.out = set()
+        self.inp = set()
+        self.legal = set()
+        if clone is not None :
+            self.inp = clone.out
+            self.legal = clone.legal
+            self.treasure_map = clone.treasure_map
+
+    def set_up(self,TREASURE_MAP):
+        self.treasure_map = TREASURE_MAP
+        for y_row, row in enumerate(self.treasure_map):
+            for x_col, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    self.legal.add((r, c))
+
+
+    def mine(self,board):
+        mine = Point(None)
+        mine.x, mine.y = board.x, board.y
+        self.out.add(mine)
+        # Return direction
+
+    def trigger(self,mine):
+        self.out.remove(mine)
+
+    def __iter__(self):
+        for m1 in self.inp:
+            yield m1
 
 class StalkAndTorpedo():
 
@@ -157,7 +197,7 @@ class StalkAndTorpedo():
         self.out = set()
         self.inp = set()
         if clone is not None :
-            self.inp = clone.out
+            self.treasure_map, self.inp = clone.treasure_map, clone.out
 
     def __str__(self):
         text = ''
@@ -166,16 +206,19 @@ class StalkAndTorpedo():
         return text
 
     def set_up(self,TREASURE_MAP):
-        for y_row, row in enumerate(TREASURE_MAP):
+        inp_add = self.inp.add
+        new_board, new_stalk = None, None
+        self.treasure_map = TREASURE_MAP
+        for y_row, row in enumerate(self.treasure_map):
             for x_col, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:
                     new_board = Board(None)
                     new_board.x, new_board.y = x_col, y_row
 
                     new_stalk = StalkAndLegal(None)
-                    new_stalk.set_up(TREASURE_MAP)
+                    new_stalk.set_up(self.treasure_map)
 
-                    self.inp.add((new_board,new_stalk))
+                    inp_add((new_board,new_stalk))
 
     def update(self,action,data):
         action(self,data)
@@ -207,13 +250,15 @@ class StalkAndTorpedo():
                 self.out.add( (board,stalk) )
 
     def read_silence(self,data):
+        inp = self.inp
         out_add = self.out.add
-        if len(self.inp) >= 9 :
-            self.set_up(TREASURE_MAP)
+        if len(self.inp) >= 10:
+            self.inp.clear()
+            self.set_up(self.treasure_map)
             self.out = self.inp
 
         else :
-            for board, stalk in self.inp:
+            for board, stalk in inp:
                 # Length 0
                 out_add( (board, stalk))
 
@@ -222,8 +267,10 @@ class StalkAndTorpedo():
                         board1, stalk1 = Board(board), StalkAndLegal(stalk)
                         result = stalk1.read_silence(board1,length1,dy_row,dx_col)
                         if result == True :
-                            board.x, board.y = board.x + length1 * dx_col, board.y + length1 * dy_row
-                            self.out.add( (board1,stalk1) )
+                            board1.x, board1.y = board1.x + length1 * dx_col, board1.y + length1 * dy_row
+                            out_add( (board1,stalk1) )
+                        else :
+                            break
 
 READ_COMMAND = [
 ( 'MOVE' , StalkAndTorpedo.read_move ),
@@ -266,6 +313,14 @@ class Submarine():
         t = f'TORPEDO {x} {y}'
         self.out = t if self.out == '' else f'{self.out} | {t}'
 
+    def write_mine(self,direction):
+        t = f'MINE {direction}'
+        self.out = t if self.out == '' else f'{self.out} | {t}'
+
+    def write_trigger(self,x,y):
+        t = f'TRIGGER {x} {y}'
+        self.out = t if self.out == '' else f'{self.out} | {t}'
+
     # TODO -->
     def read_move(self,direction):
         # IF OKAY
@@ -299,13 +354,15 @@ class Board(Submarine):
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
 
+
+
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
 
 def update_order(text):
     text, t1 = text.split('|'), ''
     for t1 in text:
-        print(". update order: {}".format(t1), flush = True, file=sys.stderr)
+        #print(". update order: {}".format(t1), flush = True, file=sys.stderr)
         try:
             c1, f1 = next( (c1,f1) for c1,f1 in READ_COMMAND if t1.find(c1) != -1 )
             t_list = t1.split(' ')
@@ -313,6 +370,15 @@ def update_order(text):
             yield c1, f1, d1
         except:
             return
+
+def update_agent(board):
+    info = [ None ] * (AGENT_MINE + 1)
+    info[AGENT_TORPEDO] = board.torpedo
+    #info[AGENT_SONAR] = board.sonar
+    info[AGENT_SILENCE] = board.silence
+    info[AGENT_MINE] = board.mine
+    return info
+
 
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
@@ -387,6 +453,11 @@ if __name__ == '__main__':
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
         print("Len Kanban Board {} Torpedo {}".format(len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
+        #if len(kanban_opp.inp) <= 10 :
+        #    for b1,s1 in kanban_opp.inp:
+        #        print("submarin x {} y {}".format(b1.x,b1.y),file=sys.stderr)
+
+
 
         if game_board[MY_ID].torpedo == 0 and len(kanban_opp.inp) <= 20 :
 
@@ -396,14 +467,25 @@ if __name__ == '__main__':
                 distance = manhattan(s1,game_board[MY_ID])
                 if  distance >= 2 and distance <= 4 :
                     game_board[MY_ID].write_torpedo(s1.x,s1.y)
+                    game_board[MY_ID].torpedo = 3
                     break
 
+
+        #d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
+        info = update_agent(game_board[MY_ID])
+        text = ''
+        try :
+            i1 = next(i1 for i1,agent1 in enumerate(info) if agent1 != 0)
+            text = select_a[i1]
+        except StopIteration:
+            text = 'SONAR'
 
         if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)
             game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
             dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-            game_board[MY_ID].write_move(dir,'TORPEDO')
+            #game_board[MY_ID].write_move(dir,'TORPEDO')
+            game_board[MY_ID].write_move(dir,text)
             turn += 1
 
         print(game_board[MY_ID].out)

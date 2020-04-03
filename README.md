@@ -27,9 +27,9 @@
 
 - [x] Create a set of possible submarine
 - [x] On each turn update set and delete impossible Submarine
-- [ ] Find a bug ... (no submarine)
-- [ ] Find the good submarine
-- [ ] Torpedo it
+- [x] Find a bug ... (no submarine)
+- [x] Find the good submarine (***can be improved***)
+- [x] Torpedo it
 
 **Add missile**
 

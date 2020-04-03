@@ -149,7 +149,7 @@ class _staling(unittest.TestCase):
 
         print(len(me.inp))
 
-    def test_na_read(self):
+    def _na_read(self):
 
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
@@ -157,6 +157,30 @@ class _staling(unittest.TestCase):
 
         for c1, f1, d1 in update_order('NA'):
             print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+
+    def test_silence(self):
+        for t_r in TREASURE_MAP:
+            print(t_r)
+
+        me = StalkAndTorpedo(None)
+        me.set_up(TREASURE_MAP)
+        print(len(me.inp))
+
+        for c1, f1, d1 in update_order('MOVE N|SILENCE'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+            if f1 is not None:
+                me.update(f1,d1)
+                me = StalkAndTorpedo(me)
+                print(len(me.inp))
+
+        for c1, f1, d1 in update_order('MOVE N|MOVE N'):
+            print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
+            if f1 is not None:
+                me.update(f1,d1)
+                me = StalkAndTorpedo(me)
+                print(len(me.inp))
+
+
 
 
 
