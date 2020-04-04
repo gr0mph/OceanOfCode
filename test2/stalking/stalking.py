@@ -21,7 +21,7 @@ from OceanOfCode import update_order
 
 import unittest
 
-class _staling(unittest.TestCase):
+class _stalking(unittest.TestCase):
 
     def _set_up(self):
         me = StalkAndTorpedo(None)

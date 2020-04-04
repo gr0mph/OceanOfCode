@@ -130,7 +130,7 @@ class MineAndTrigger():
         for y_row, row in enumerate(self.treasure_map):
             for x_col, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:
-                    self.legal.add((r, c))
+                    self.legal.add( (y_row, x_col) )
 
     def mine(self,board):
         mine = Point(None)
@@ -155,7 +155,12 @@ class MineAndTrigger():
         self.out.remove(mine)
 
     def nearby(self,board):
-        pass
+        for coord in self.inp:
+            y_row, x_col = coord
+            mine = Point(x_col,y_row)
+            if square(mine,board) == True:
+                return mine
+        return None
 
     def __iter__(self):
         for m1 in self.inp:
@@ -303,6 +308,12 @@ class Point():
     def __init__(self,x,y):
         self.x, self.y = x, y
 
+class Mine(Point):
+
+    def __init__(self,x,y):
+        super().__init__(x,y)
+        self.nb = 0
+
 class Submarine():
 
     def __init__(self,clone):
@@ -400,6 +411,12 @@ def update_agent(board):
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
     return distance
+
+def square(obj1,obj2):
+    is_true = True
+    is_true &= False if abs(obj1.x - obj2.x) > 1 else True
+    is_true &= False if abs(obj1.y - obj2.y) > 1 else True
+    return is_true
 
 def path_solving(game_board,puzzle):
     game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
