@@ -3,6 +3,7 @@ sys.path.append('../../')
 
 # Global variables
 from test2.test_main import TREASURE_MAP
+from test2.test_main import MINE_MAP
 
 # From OceanOfCode
 # Class
@@ -72,7 +73,7 @@ class _mining(unittest.TestCase):
         print("Orientation: {} Legal Length: {} Minefield Length {}".format(
         orientation, len(me.legal), len(me.minefield)))
 
-    def test_nearby(self):
+    def _nearby(self):
         print("3. START test_nearby")
 
         me = MineAndTrigger(None)
@@ -109,6 +110,18 @@ class _mining(unittest.TestCase):
 
         print("Legal Length: {} Minefield Length {}".format(
         len(me.legal), len(me.minefield)))
+
+    def test_filter(self):
+        print("4. START test_filter")
+
+        lambda_n = lambda t1, m1 : '.' if t1 == '.' and m1 == '.' else ' '
+        for i1 in range(15):
+            MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
+
+        for t_r in TREASURE_MAP:
+            print(t_r)
+        for m_r in MINE_MAP:
+            print(m_r)
 
 
 if __name__ == '__main__':

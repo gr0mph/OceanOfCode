@@ -27,6 +27,22 @@ TEXT4 = 'SURFACE 5'
 TEXT5 = 'TORPEDO 11 1|MOVE N'
 TEXT6 = 'MOVE N|SURFACE 5|TORPEDO 11 1|SILENCE'
 
+MINE_MAP = []
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('  .    .    .  '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('  .    .    .  '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('  .    .    .  '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('               '))
 
 
 

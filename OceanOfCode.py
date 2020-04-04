@@ -7,12 +7,14 @@ import gc
 
 AGENT_TORPEDO = 0   # 3,2,1,0
 #AGENT_SONAR = 1
-AGENT_SILENCE = 1
 AGENT_MINE = 2
+AGENT_SILENCE = 1
 
 game_board = [ None , None ]
 movement_f = { 'N': None,'S': None,'E': None,'W': None }
+#select_a = [ 'TORPEDO' , 'MINE' , 'SILENCE' ]
 select_a = [ 'TORPEDO' , 'SILENCE' , 'MINE' ]
+
 
 WIDTH, HEIGHT, MY_ID, OPP_ID = 0 , 0, 0, 0
 TREASURE_MAP = []
@@ -40,22 +42,45 @@ def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
-DEEP = 10
+DEEP = 12
+DEEP_SILENCE = 14
+SEARCH_OPP_TORPEDO = 20
+SEARCH_OPP_TRIGGER = 6
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
 
-    def __init__(self, grid):
+    def __init__(self, clone):
         """Initialize the HamiltonSolver instance from a grid, which must be a
         list of strings, one for each row of the grid.
         """
-        self.grid = grid
-        self.h = h = len(grid)
-        self.w = w = len(grid[0])
+        self.grid = None
+        self.legal = set()
+        self.start = None
+        if clone is not None :
+            self.grid = clone.grid
+            self.legal = clone.legal
+            self.start = clone.start
+
+        self.finish = None
+
+    def set_up(self,TREASURE_MAP):
+        self.grid = TREASURE_MAP
         self.start = None
         self.finish = None
         self.legal = set()
-        for r, row in enumerate(grid):
+        for r, row in enumerate(self.grid):
+            for c, item in enumerate(row):
+                if item in STARTING_SYMBOLS:
+                    self.start = (r, c)
+                elif item in FINISHING_SYMBOLS:
+                    self.finish = (r, c)
+                elif item in EMPTY_SYMBOLS:
+                    self.legal.add((r, c))
+
+    def reset(self):
+        self.legal = set()
+        for r, row in enumerate(self.grid):
             for c, item in enumerate(row):
                 if item in STARTING_SYMBOLS:
                     self.start = (r, c)
@@ -153,7 +178,6 @@ class MineAndTrigger():
 
     def nearby(self,my_board,opp_board):
         for mine in self.minefield:
-            print(mine)
             if square(mine,my_board) == True:
                 continue
             if square(mine,opp_board) == True:
@@ -272,7 +296,7 @@ class StalkAndTorpedo():
     def read_silence(self,data):
         inp = self.inp
         out_add = self.out.add
-        if len(self.inp) >= 10:
+        if len(self.inp) >= DEEP_SILENCE:
             self.inp.clear()
             self.set_up(self.treasure_map)
             self.out = self.inp
@@ -300,6 +324,33 @@ READ_COMMAND = [
 ( 'SILENCE' , StalkAndTorpedo.read_silence )
 ]
 
+MINE_MAP = []
+#MINE_MAP.append(list('               '))
+#MINE_MAP.append(list(' . .  . .  . . '))
+#MINE_MAP.append(list('  .    .    .  '))
+#MINE_MAP.append(list(' . .  . .  . . '))
+#MINE_MAP.append(list('               '))
+#MINE_MAP.append(list('               '))
+#MINE_MAP.append(list('               '))
+#MINE_MAP.append(list('               '))
+#MINE_MAP.append(list('               '))
+#MINE_MAP.append(list('               '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('  .    .    .  '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('  .    .    .  '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list('               '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('  .    .    .  '))
+MINE_MAP.append(list(' . .  . .  . . '))
+MINE_MAP.append(list('               '))
+
 
 class Point():
 
@@ -321,10 +372,11 @@ class Submarine():
         self.out = ''
         if clone is not None :
             self.x, self.y = clone.x, clone.y
-            self.treasure_map = copy.deepcopy(clone.treasure_map)
+            #self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
             self.x, self.y = 0, 0
-            self.treasure_map = copy.deepcopy(TREASURE_MAP)
+            #self.treasure_map = copy.deepcopy(TREASURE_MAP)
+        self.treasure_map = TREASURE_MAP
 
     @property
     def sector(self):
@@ -333,6 +385,10 @@ class Submarine():
     # MOVE DIRECTION {NORTH, EAST, WEST, SOUTH} LOAD {TORPEDO,SONAR,etc}
     def write_move(self,direction,load):
         t = f'MOVE {direction} {load}'
+        self.out = t if self.out == '' else f'{self.out} | {t}'
+
+    def write_silence(self,direction,length):
+        t = f'SILENCE {direction} {length}'
         self.out = t if self.out == '' else f'{self.out} | {t}'
 
     def write_surface(self):
@@ -420,7 +476,7 @@ def square(obj1,obj2):
     return is_true
 
 def path_solving(game_board,puzzle):
-    game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
+    #game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
     puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
 
     # TODO: Idea but not finished or not done good result
@@ -434,7 +490,9 @@ def path_solving(game_board,puzzle):
 if __name__ == '__main__':
     read_map()
     game_board[MY_ID] = Board(game_board[MY_ID])
-    puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
+
+    puzzle = HamiltonSolver(None)
+    puzzle.set_up(game_board[MY_ID].treasure_map)
     y_row , x_col = puzzle.coord_random()
     puzzle.legal.remove( (y_row,x_col) )
     game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
@@ -443,19 +501,25 @@ if __name__ == '__main__':
     kanban_opp = StalkAndTorpedo(None)
     kanban_opp.set_up(TREASURE_MAP)
 
+    kanban_mine = MineAndTrigger(None)
+    lambda_n = lambda t1, m1 : '.' if t1 == '.' and m1 == '.' else ' '
+    for i1 in range(15):
+        MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
+    kanban_mine.set_up(MINE_MAP)
 
     print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
 
     turn = 1
 
     while True:
-        print('TURN {}'.format(turn),file=sys.stderr)
+        print("TURN {}".format(turn),file=sys.stderr)
         game_board[MY_ID] = Board(game_board[MY_ID])
         game_board[OPP_ID] = Board(game_board[OPP_ID])
         update(game_board[MY_ID],game_board[OPP_ID])
 
         if turn == DEEP + 1 :
-            puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
+            #puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
+            puzzle = HamiltonSolver(puzzle)
             game_board, puzzle, solution = path_solving(game_board,puzzle)
 
             if solution is None :
@@ -463,42 +527,56 @@ if __name__ == '__main__':
 
                 game_board[MY_ID].treasure_map = TREASURE_MAP
                 game_board[MY_ID].write_surface()
-                game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
+                puzzle.reset()
+                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
+                #game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
 
             elif len(solution) != (DEEP + 1) :
                 # TODO: WARNING : Write a state in this case
 
                 game_board[MY_ID].treasure_map = TREASURE_MAP
                 game_board[MY_ID].write_surface()
-                game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
+                puzzle.reset()
+                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
+                #game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
 
             else :
                 turn = 1
 
+        if turn == 1 and game_board[MY_ID].silence == 0:
+            y_row , x_col = puzzle.read_turn(solution,turn)
+            dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+            game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
+            game_board[MY_ID].write_silence(dir,1)
+            turn += 1
+
         #t_check_map(game_board[MY_ID].treasure_map)
+        print("Position (y:{},x:{})".format(game_board[MY_ID].y,game_board[MY_ID].x),file=sys.stderr)
 
         sonar_result = input()
         print(sonar_result, file=sys.stderr)
         opponent_orders = input()
-        if opponent_orders is None:
-            print("What the fuck ?", file=sys.stderr)
+        #if opponent_orders is None:
+        #    print("What the fuck ?", file=sys.stderr)
+
         for c1, f1, d1 in update_order(opponent_orders):
             if f1 is not None:
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
-        print("Len Kanban Board {} Torpedo {}".format(len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
+        print("Kanban Board {} Torpedo {}".format(len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
         #if len(kanban_opp.inp) <= 10 :
         #    for b1,s1 in kanban_opp.inp:
         #        print("submarin x {} y {}".format(b1.x,b1.y),file=sys.stderr)
 
         if game_board[MY_ID].mine == 0 :
-            pass
 
-        if game_board[MY_ID].torpedo == 0 and len(kanban_opp.inp) <= 20 :
+            orientation = kanban_mine.mine(game_board[MY_ID])
+            if orientation is not None :
+                game_board[MY_ID].write_mine(orientation)
+                game_board[MY_ID].mine = 3
 
-            print("Search for torpedo",file=sys.stderr)
-
+        if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
             for s1,_ in kanban_opp.inp :
                 distance = manhattan(s1,game_board[MY_ID])
                 if  distance >= 2 and distance <= 4 :
@@ -506,6 +584,13 @@ if __name__ == '__main__':
                     game_board[MY_ID].torpedo = 3
                     break
 
+        if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
+            for s1,_ in kanban_opp.inp :
+                mine = kanban_mine.nearby(game_board[MY_ID],s1)
+                if mine is not None:
+                    kanban_mine.trigger(mine)
+                    game_board[MY_ID].write_trigger(mine.x,mine.y)
+                    break
 
         #d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
         info = update_agent(game_board[MY_ID])
@@ -518,7 +603,7 @@ if __name__ == '__main__':
 
         if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)
-            game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
+            #game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
             dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
             #game_board[MY_ID].write_move(dir,'TORPEDO')
             game_board[MY_ID].write_move(dir,text)

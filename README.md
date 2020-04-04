@@ -23,7 +23,7 @@
 - [x] Create a simple Matrix depend of state path to choose best path.
 - [x] Check state of path function
 
-**Stalk annd torpedo**
+**Stalk and torpedo**
 
 - [x] Create a set of possible submarine
 - [x] On each turn update set and delete impossible Submarine
@@ -31,10 +31,22 @@
 - [x] Find the good submarine (***can be improved***)
 - [x] Torpedo it
 
-**Add missile**
+**Mining and triggering**
 
 - [x] Read rule of missile
-- [ ] Add class to implement them
+- [x] Add class to implement them
+- [x] Triggering it
+
+**Add Geolocalisation**
+
+- [ ] Improve stalking
+- [ ] Add sonar, in the strategy to counter silence command
+- [ ] Check life of the opponent to determine position
+
+**Improve TREASURE map**
+
+- [ ] Simplify the map
+- [ ] Add border
 
 **Implement strategy**
 
