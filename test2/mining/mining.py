@@ -21,13 +21,13 @@ import unittest
 
 class _mining(unittest.TestCase):
 
-    def test_set_up(self):
+    def _set_up(self):
         print("0. START test_set_up")
         me = MineAndTrigger(None)
         me.set_up(TREASURE_MAP)
         print(len(me.legal))
 
-    def test_mine(self):
+    def _mine(self):
         print("1. START test_mine")
 
         me = MineAndTrigger(None)
@@ -71,6 +71,44 @@ class _mining(unittest.TestCase):
         me = MineAndTrigger(me)
         print("Orientation: {} Legal Length: {} Minefield Length {}".format(
         orientation, len(me.legal), len(me.minefield)))
+
+    def test_nearby(self):
+        print("3. START test_nearby")
+
+        me = MineAndTrigger(None)
+        me.set_up(TREASURE_MAP)
+        print("Length: {}".format(len(me.legal)))
+
+        board1 = Board(None)
+        board1.x,board1.y = 10,3
+
+        orientation = me.mine(board1)
+        for p in me.minefield:
+            print(p)
+        print("Orientation: {} Legal Length: {} Minefield Length {}".format(
+        orientation, len(me.legal), len(me.minefield)))
+
+        board2 = Board(None)
+        board2.x,board2.y = 10,3
+
+        mine = me.nearby(board1,board2)
+        print("Mine: {}".format(mine))
+
+        if mine is not None:
+            me.trigger(mine)
+
+        print("Legal Length: {} Minefield Length {}".format(
+        len(me.legal), len(me.minefield)))
+
+        board1.x,board1.y = 5,5
+        mine = me.nearby(board1,board2)
+        print("Mine: {}".format(mine))
+
+        if mine is not None:
+            me.trigger(mine)
+
+        print("Legal Length: {} Minefield Length {}".format(
+        len(me.legal), len(me.minefield)))
 
 
 if __name__ == '__main__':

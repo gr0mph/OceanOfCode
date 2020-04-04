@@ -151,11 +151,12 @@ class MineAndTrigger():
         self.legal.add(new_coord)
         self.minefield.remove(mine)
 
-    def nearby(self,board):
-        for coord in self.inp:
-            y_row, x_col = coord
-            mine = Point(x_col,y_row)
-            if square(mine,board) == True:
+    def nearby(self,my_board,opp_board):
+        for mine in self.minefield:
+            print(mine)
+            if square(mine,my_board) == True:
+                continue
+            if square(mine,opp_board) == True:
                 return mine
         return None
 
