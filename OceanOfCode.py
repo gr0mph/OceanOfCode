@@ -117,11 +117,10 @@ class MineAndTrigger():
 
     def __init__(self,clone):
         self.treasure_map = None
-        self.out = set()
-        self.inp = set()
+        self.minefield = set()
         self.legal = set()
         if clone is not None :
-            self.inp = clone.out
+            self.minefield = clone.minefield
             self.legal = clone.legal
             self.treasure_map = clone.treasure_map
 
@@ -133,26 +132,24 @@ class MineAndTrigger():
                     self.legal.add( (y_row, x_col) )
 
     def mine(self,board):
-        mine = Point(None)
         dirs = [iter(DIRS)]
         orientation, y_drow, x_dcol = '', 0, 0
         for orientation, y_drow, x_dcol in dirs[-1]:
             new_coord = board.y + y_drow, board.x + x_dcol
             if new_coord in self.legal:
                 self.legal.remove(new_coord)
+                mine = Point(board.x + x_dcol,board.y + y_drow)
+                self.minefield.add(mine)
                 break
-
-        if orientation == '' :
+        else:
             return None
 
-        mine.y, mine.x = board.y + y_drow, board.x + x_dcol
-        self.out.add(mine)
         return orientation
 
     def trigger(self,mine):
         new_coord = mine.y, mine.x
         self.legal.add(new_coord)
-        self.out.remove(mine)
+        self.minefield.remove(mine)
 
     def nearby(self,board):
         for coord in self.inp:
@@ -163,7 +160,7 @@ class MineAndTrigger():
         return None
 
     def __iter__(self):
-        for m1 in self.inp:
+        for m1 in self.minefield:
             yield m1
 
 
@@ -307,6 +304,9 @@ class Point():
 
     def __init__(self,x,y):
         self.x, self.y = x, y
+
+    def __str__(self):
+        return f'({self.x},{self.y})'
 
 class Mine(Point):
 
