@@ -36,16 +36,156 @@ def read_map():
     global TREASURE_MAP
     for i in range(HEIGHT):
         TREASURE_MAP.append(list(input()))
-        #print(TREASURE_MAP[i],file=sys.stderr)
 
 def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
-DEEP = 12
-DEEP_SILENCE = 14
+DEEP = 11
+DEEP_SILENCE = 14 #26
 SEARCH_OPP_TORPEDO = 20
-SEARCH_OPP_TRIGGER = 6
+SEARCH_OPP_TRIGGER = 5
+
+class Node:
+
+    def __init__(self,clone):
+        self.x, self.y = 0, 0
+        self.privileged_dir, self.possible_dir = None, None
+        if clone is not None:
+            self.x, self.y = clone.x, clone.y
+            self.privileged_dir, self.possible_dir = self.privileged_dir, self.possible_dir
+
+    def set_up(self,x_col,y_row):
+        self.x, self.y = x_col, y_row
+
+    def update_dir(self,solving,DIRS):
+        #REDUCE_MAP = copy.deepcopy(TREASURE_MAP)
+        REDUCE_MAP = solving.grid
+        self.privileged_dir = [iter(copy.deepcopy(DIRS))]
+        self.possible_dir = [iter(copy.deepcopy(DIRS))]
+
+        x_col, y_row = 0, 0
+        legal = solving.legal
+        for i1, priv_next, poss_next in enumerate(zip(self.privileged_dir, self.possible_dir)):
+            orientation, y_drow, x_dcol = priv_next
+            coord = self.y + y_drow, self.x + x_dcol
+            if coord not in legal:
+                del self.privileged_dir[i1]
+                del self.possible_dir[i1]
+
+        coord = self.y, self.x
+        if len(self.privileged_dir) <= 1 :
+            legal.remove()
+            REDUCE_MAP[self.y][self.x] = 'x'
+        elif len(self.privileged_dir) == 2 :
+            self.possible_dir = None
+            for orientation, y_drow, x_dcol in self.privileged_dir:
+                coord = self.y + y_drow, self.x + x_dcol
+                solving.risk.append(coord)
+        else :
+            self.privileged_dir = None
+
+        coord = self.y, self.x
+        legal[coord] = self
+        return REDUCE_MAP
+
+def update_treasure(path_solving,treasure_map):
+    pass
+
+    return treasure_map
+
+
+class PathSolving:
+    """Solver for a Hamilton Path problem."""
+
+    def __init__(self, clone):
+        """Initialize the HamiltonSolver instance from a grid, which must be a
+        list of strings, one for each row of the grid.
+        """
+        self.grid = None
+        self.legal = set()
+        self.start = None
+        self.risk = []
+        if clone is not None :
+            self.grid = clone.grid
+            self.legal = clone.legal
+            self.start = clone.start
+            self.risk = clone.risk
+
+    def set_up(self,TREASURE_MAP):
+        self.grid = copy.deepcopy(TREASURE_MAP)
+        self.start = None
+        self.legal = set()
+        self.risk = []
+        for r, row in enumerate(self.grid):
+            for c, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    self.legal.add((r, c))
+
+    def reset(self):
+        self.legal = set()
+        for r, row in enumerate(self.grid):
+            for c, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    self.legal.add((r, c))
+
+    def update(self):
+        for l1 in self.legal:
+            y_row, x_col = l1
+            n1 = Node(None)
+            n1.set_up(x_col,y_row)
+            self.grid = n1.update_dir(self,DIRS)
+
+
+    def coord_random(self):
+        node = random.choice(list(self.legal))
+        return node
+
+    def read_turn(self,path,turn):
+        return path[turn]
+
+    def solve(self):
+        """Generate solutions as lists of coordinates."""
+        start_time = time.time()
+        r , c = self.start
+        path = [self.start]
+        dirs = copy.deepcopy(DIRS)
+        random.shuffle(dirs)
+        dirs = [iter(dirs)]
+
+        # Cache attribute lookups in local variables
+        path_append = path.append
+        path_pop = path.pop
+        legal = self.legal
+        legal_add = legal.add
+        legal_remove = legal.remove
+        dirs_append = dirs.append
+        dirs_pop = dirs.pop
+
+        while path:
+            r, c = path[-1]
+            for orientation, dr, dc in dirs[-1]:
+                new_coord = r + dr, c + dc
+                if new_coord in legal:
+                    path_append(new_coord)
+                    legal_remove(new_coord)
+                    dirs_append(iter(DIRS))
+                    if len(path) > DEEP :
+                        return path
+                    if not legal:
+                        return path
+                    break
+
+                #elif new_coord in self.finish:
+                #    path_append(new_coord)
+                #    dirs_append(iter(DIRS))
+                #    print("HERE3",file=sys.stderr)
+                #    return path
+
+            else:
+                legal_add(path_pop())
+                dirs_pop()
+
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -370,17 +510,12 @@ class Submarine():
 
     def __init__(self,clone):
         self.out = ''
+        self.treasure_map = TREASURE_MAP
         if clone is not None :
             self.x, self.y = clone.x, clone.y
-            #self.treasure_map = copy.deepcopy(clone.treasure_map)
         else :
             self.x, self.y = 0, 0
-            #self.treasure_map = copy.deepcopy(TREASURE_MAP)
-        self.treasure_map = TREASURE_MAP
 
-    @property
-    def sector(self):
-        return 1 + (self.x // 5) + ( (self.y // 5) * 3 )
 
     # MOVE DIRECTION {NORTH, EAST, WEST, SOUTH} LOAD {TORPEDO,SONAR,etc}
     def write_move(self,direction,load):
@@ -464,6 +599,8 @@ def update_agent(board):
     info[AGENT_MINE] = board.mine
     return info
 
+def sector(obj1):
+    return 1 + (self.x // 5) + ( (self.y // 5) * 3 )
 
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
@@ -476,7 +613,6 @@ def square(obj1,obj2):
     return is_true
 
 def path_solving(game_board,puzzle):
-    #game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
     puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
 
     # TODO: Idea but not finished or not done good result
@@ -489,6 +625,7 @@ def path_solving(game_board,puzzle):
 
 if __name__ == '__main__':
     read_map()
+    t_check_map(TREASURE_MAP)
     game_board[MY_ID] = Board(game_board[MY_ID])
 
     puzzle = HamiltonSolver(None)
@@ -518,7 +655,6 @@ if __name__ == '__main__':
         update(game_board[MY_ID],game_board[OPP_ID])
 
         if turn == DEEP + 1 :
-            #puzzle = HamiltonSolver(game_board[MY_ID].treasure_map)
             puzzle = HamiltonSolver(puzzle)
             game_board, puzzle, solution = path_solving(game_board,puzzle)
 
@@ -529,7 +665,6 @@ if __name__ == '__main__':
                 game_board[MY_ID].write_surface()
                 puzzle.reset()
                 puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
-                #game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
 
             elif len(solution) != (DEEP + 1) :
                 # TODO: WARNING : Write a state in this case
@@ -538,7 +673,6 @@ if __name__ == '__main__':
                 game_board[MY_ID].write_surface()
                 puzzle.reset()
                 puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
-                #game_board[MY_ID].treasure_map[game_board[MY_ID].y][game_board[MY_ID].x] = 'D'
 
             else :
                 turn = 1
@@ -556,18 +690,14 @@ if __name__ == '__main__':
         sonar_result = input()
         print(sonar_result, file=sys.stderr)
         opponent_orders = input()
-        #if opponent_orders is None:
-        #    print("What the fuck ?", file=sys.stderr)
 
         for c1, f1, d1 in update_order(opponent_orders):
             if f1 is not None:
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
-        print("Kanban Board {} Torpedo {}".format(len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
-        #if len(kanban_opp.inp) <= 10 :
-        #    for b1,s1 in kanban_opp.inp:
-        #        print("submarin x {} y {}".format(b1.x,b1.y),file=sys.stderr)
+        print("Kanban Board {} Torpedo {}".format(
+        len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
 
         if game_board[MY_ID].mine == 0 :
 
@@ -592,7 +722,6 @@ if __name__ == '__main__':
                     game_board[MY_ID].write_trigger(mine.x,mine.y)
                     break
 
-        #d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
         info = update_agent(game_board[MY_ID])
         text = ''
         try :
@@ -603,12 +732,8 @@ if __name__ == '__main__':
 
         if turn > 0 and turn < DEEP + 1 :
             y_row , x_col = puzzle.read_turn(solution,turn)
-            #game_board[MY_ID].treasure_map[y_row][x_col] = 'D'
             dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-            #game_board[MY_ID].write_move(dir,'TORPEDO')
             game_board[MY_ID].write_move(dir,text)
             turn += 1
 
         print(game_board[MY_ID].out)
-
-        #print("MOVE N TORPEDO")
