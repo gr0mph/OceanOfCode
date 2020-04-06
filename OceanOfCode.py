@@ -61,17 +61,21 @@ class Node:
     def update_dir(self,solving,DIRS):
         #REDUCE_MAP = copy.deepcopy(TREASURE_MAP)
         REDUCE_MAP = solving.grid
-        self.privileged_dir = [iter(copy.deepcopy(DIRS))]
-        self.possible_dir = [iter(copy.deepcopy(DIRS))]
+        self.privileged_dir = copy.deepcopy(DIRS)
+        self.possible_dir = copy.deepcopy(DIRS)
 
         x_col, y_row = 0, 0
         legal = solving.legal
-        for i1, priv_next, poss_next in enumerate(zip(self.privileged_dir, self.possible_dir)):
+        print("({},{})".format(self.x,self.y),end='\t')
+        for i1, next1 in enumerate(zip(self.privileged_dir, self.possible_dir)):
+            priv_next, poss_next = next1
             orientation, y_drow, x_dcol = priv_next
             coord = self.y + y_drow, self.x + x_dcol
             if coord not in legal:
+                print("delete {} priv_next {}".format(i1,priv_next),end=' ')
                 del self.privileged_dir[i1]
                 del self.possible_dir[i1]
+        print()
 
         coord = self.y, self.x
         if len(self.privileged_dir) <= 1 :
@@ -89,10 +93,6 @@ class Node:
         legal[coord] = self
         return REDUCE_MAP
 
-def update_treasure(path_solving,treasure_map):
-    pass
-
-    return treasure_map
 
 
 class PathSolving:
@@ -103,7 +103,7 @@ class PathSolving:
         list of strings, one for each row of the grid.
         """
         self.grid = None
-        self.legal = set()
+        self.legal = {} #set()
         self.start = None
         self.risk = []
         if clone is not None :
@@ -115,15 +115,17 @@ class PathSolving:
     def set_up(self,TREASURE_MAP):
         self.grid = copy.deepcopy(TREASURE_MAP)
         self.start = None
-        self.legal = set()
+        self.legal = {} #set()
         self.risk = []
         for r, row in enumerate(self.grid):
             for c, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:
-                    self.legal.add((r, c))
+                    self.legal.update( { (r,c) : None } )
+                    #self.legal.add((r, c))
 
     def reset(self):
-        self.legal = set()
+        # TODO: Trop naze cette fonction...
+        self.legal = {} #set()
         for r, row in enumerate(self.grid):
             for c, item in enumerate(row):
                 if item in EMPTY_SYMBOLS:

@@ -43,7 +43,7 @@
 - [ ] Add sonar, in the strategy to counter silence command
 - [ ] Check life of the opponent to determine position
 
-**Improve TREASURE map**
+**Improve Treasure map**
 
 - [x] Test simplification
 - [ ] Simplify the map
