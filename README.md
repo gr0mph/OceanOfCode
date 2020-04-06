@@ -45,6 +45,7 @@
 
 **Improve TREASURE map**
 
+- [x] Test simplification
 - [ ] Simplify the map
 - [ ] Add border
 
