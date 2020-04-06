@@ -63,36 +63,44 @@ class Node:
         REDUCE_MAP = solving.grid
         self.privileged_dir = copy.deepcopy(DIRS)
         self.possible_dir = copy.deepcopy(DIRS)
-
-        x_col, y_row = 0, 0
         legal = solving.legal
-        print("({},{})".format(self.x,self.y),end='\t')
-        for i1, next1 in enumerate(zip(self.privileged_dir, self.possible_dir)):
-            priv_next, poss_next = next1
-            orientation, y_drow, x_dcol = priv_next
-            coord = self.y + y_drow, self.x + x_dcol
-            if coord not in legal:
-                print("delete {} priv_next {}".format(i1,priv_next),end=' ')
-                del self.privileged_dir[i1]
-                del self.possible_dir[i1]
-        print()
 
-        coord = self.y, self.x
-        if len(self.privileged_dir) <= 1 :
-            legal.remove()
-            REDUCE_MAP[self.y][self.x] = 'x'
-        elif len(self.privileged_dir) == 2 :
-            self.possible_dir = None
-            for orientation, y_drow, x_dcol in self.privileged_dir:
-                coord = self.y + y_drow, self.x + x_dcol
-                solving.risk.append(coord)
-        else :
-            self.privileged_dir = None
+        results = [dir for dir in DIRS if is_direction_legal(self,legal,dir)]
 
-        coord = self.y, self.x
-        legal[coord] = self
+        # x_col, y_row = 0, 0
+        # print("({},{})".format(self.x,self.y),end='\t')
+        # #for i1, next1 in enumerate(zip(self.privileged_dir, self.possible_dir)):
+        # for next1 in zip(self.privileged_dir, self.possible_dir):
+        #     priv_next, poss_next = next1
+        #     orientation, y_drow, x_dcol = priv_next
+        #     coord = self.y + y_drow, self.x + x_dcol
+        #     print("{}".format(coord),end='\t')
+        #     if coord not in legal:
+        #         print("delete {} priv_next {}".format(i1,priv_next),end='\t')
+        #         del self.privileged_dir[i1]
+        #         del self.possible_dir[i1]
+        print("({},{} r {}".format(self.x,self.y,results))
+
+        # coord = self.y, self.x
+        # if len(self.privileged_dir) <= 1 :
+        #     legal.remove()
+        #     REDUCE_MAP[self.y][self.x] = 'x'
+        # elif len(self.privileged_dir) == 2 :
+        #     self.possible_dir = None
+        #     for orientation, y_drow, x_dcol in self.privileged_dir:
+        #         coord = self.y + y_drow, self.x + x_dcol
+        #         solving.risk.append(coord)
+        # else :
+        #     self.privileged_dir = None
+        #
+        # coord = self.y, self.x
+        # legal[coord] = self
         return REDUCE_MAP
 
+def is_direction_legal(point,legal,dir):
+    orientation, y_drow, x_dcol = dir
+    coord = point.y + y_drow, point.x + x_dcol
+    return True if coord in legal else False
 
 
 class PathSolving:
