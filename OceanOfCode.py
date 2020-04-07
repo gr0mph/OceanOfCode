@@ -26,7 +26,7 @@ EMPTY_SYMBOLS = '.'
 
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 GET_DIRS = { (-1,0) : 'N' , (1,0) : 'S' , (0,1) : 'E' , (0,-1) : 'W' }
-
+OPP_DIRS = { 'N' : 'S' , 'S' : 'N' , 'E' : 'W' , 'W' : 'E' }
 OPPONENT_SET = set()
 
 def read_map():
@@ -55,6 +55,9 @@ class Node:
             self.x, self.y = clone.x, clone.y
             self.privileged_dir, self.possible_dir = self.privileged_dir, self.possible_dir
 
+    def __str__(self):
+        return f'({self.x},{self.y} poss {self.possible_dir} priv {self.privileged_dir}'
+
     def set_up(self,x_col,y_row):
         self.x, self.y = x_col, y_row
 
@@ -67,34 +70,25 @@ class Node:
 
         results = [dir for dir in DIRS if is_direction_legal(self,legal,dir)]
 
-        # x_col, y_row = 0, 0
-        # print("({},{})".format(self.x,self.y),end='\t')
-        # #for i1, next1 in enumerate(zip(self.privileged_dir, self.possible_dir)):
-        # for next1 in zip(self.privileged_dir, self.possible_dir):
-        #     priv_next, poss_next = next1
-        #     orientation, y_drow, x_dcol = priv_next
-        #     coord = self.y + y_drow, self.x + x_dcol
-        #     print("{}".format(coord),end='\t')
-        #     if coord not in legal:
-        #         print("delete {} priv_next {}".format(i1,priv_next),end='\t')
-        #         del self.privileged_dir[i1]
-        #         del self.possible_dir[i1]
-        print("({},{} r {}".format(self.x,self.y,results))
+        coord = self.y, self.x
+        length = len(results)
+        if length <= 1 :
+            solving.delete.append(coord)
+            REDUCE_MAP[self.y][self.x] = 'x'
+        elif length == 2 :
+            self.possible_dir = copy.deepcopy(results)
+            self.privileged_dir = None
+            #self.possible_dir = None
+            #self.privileged_dir = copy.deepcopy(results)
+            #for orientation, y_drow, x_dcol in self.privileged_dir:
+            #    coord = self.y + y_drow, self.x + x_dcol
+            solving.risk.append(coord)
+            solving.legal.update( { coord : self } )
+        else :
+            self.possible_dir = copy.deepcopy(results)
+            self.privileged_dir = None
+            solving.legal.update( { coord : self } )
 
-        # coord = self.y, self.x
-        # if len(self.privileged_dir) <= 1 :
-        #     legal.remove()
-        #     REDUCE_MAP[self.y][self.x] = 'x'
-        # elif len(self.privileged_dir) == 2 :
-        #     self.possible_dir = None
-        #     for orientation, y_drow, x_dcol in self.privileged_dir:
-        #         coord = self.y + y_drow, self.x + x_dcol
-        #         solving.risk.append(coord)
-        # else :
-        #     self.privileged_dir = None
-        #
-        # coord = self.y, self.x
-        # legal[coord] = self
         return REDUCE_MAP
 
 def is_direction_legal(point,legal,dir):
@@ -114,6 +108,7 @@ class PathSolving:
         self.legal = {} #set()
         self.start = None
         self.risk = []
+        self.delete = []
         if clone is not None :
             self.grid = clone.grid
             self.legal = clone.legal
@@ -145,6 +140,109 @@ class PathSolving:
             n1 = Node(None)
             n1.set_up(x_col,y_row)
             self.grid = n1.update_dir(self,DIRS)
+
+        for coord in self.delete:
+            del self.legal[coord]
+
+        #coord = next(iter(self.risk))
+        #self.update_risk(coord)
+
+        #coord = self.risk[4]
+        #self.update_risk(coord)
+
+        for coord in self.risk:
+            self.update_risk(coord)
+
+        for i1, coord in enumerate(self.risk):
+            print("{} {}".format(i1,coord))
+
+    def update_risk(self,k_coord):
+        y_row, x_col = k_coord
+        if k_coord not in self.legal:
+            self.grid[y_row][x_col] = 'x'
+            return
+
+        for t_r in self.grid:
+            print(t_r)
+
+        MIN_REQUIRE_DEEP = 4
+        soluce = 0
+
+        start_time = time.time()
+        r , c = self.legal[k_coord].y, self.legal[k_coord].x
+        for d1 in self.legal[k_coord].possible_dir:
+            print("Starting {}".format(d1))
+            dir, y_drow, x_dcol = d1
+            start = r + y_drow, c + x_dcol
+
+            # Cache attribute lookups in local variables
+            legal = copy.deepcopy(self.legal)
+            n1 = legal[start]
+            coord = n1.y , n1.x
+            del legal[coord]
+            path = [n1]
+            path_append = path.append
+            path_pop = path.pop
+            print("Starting {}".format(n1))
+
+            iter_dir = [n1.possible_dir.pop()]
+            while path:
+                print("\tLen Path {} Path[0] = {}".format(len(path),path[0]))
+                y_row, x_col = path[-1].y , path[-1].x
+                for d1 in iter_dir:
+                    iter_dir.pop()
+                    print("\t\tNode {} Dir {}".format(n1,d1))
+                    orientation, y_drow, x_dcol = d1
+                    time.sleep(1)
+                    new_coord = y_row + y_drow, x_col + x_dcol
+                    if new_coord in legal and len(legal[new_coord].possible_dir) > 0 :
+                        y_row, x_col = new_coord
+                        n1 = legal[new_coord]
+                        path_append(n1)
+                        iter_dir.append(n1.possible_dir.pop())
+                        del legal[new_coord]
+
+                        if len(path) > MIN_REQUIRE_DEEP :
+                            soluce += 1
+                            print("HAPPY")
+                            for n1 in path:
+                                print(n1)
+                            break
+                    elif len(n1.possible_dir) > 0 :
+                        iter_dir.append(n1.possible_dir.pop())
+                else:
+                    #print("\t\tEnd LOOP n1 {}".format(n1))
+                    n1 = path_pop()
+                    coord = n1.y , n1.x
+                    #print("\t\tPath Pop LOOP n1 {}".format(n1))
+                    if len(n1.possible_dir) == 0 :
+                        print("Delete {}".format(coord))
+                        del legal[coord]
+                    else:
+                        legal[coord] = n1
+                        iter_dir.append(n1.possible_dir.pop())
+
+
+                if len(path) > MIN_REQUIRE_DEEP:
+                    print("FIND 2")
+                    break
+
+            print("SOLUCE")
+            for n1 in path:
+                print(n1)
+            print("END SOLUCE")
+
+        if soluce < 2 :
+            print("({},{}) shall be removed".format(self.legal[k_coord].x,self.legal[k_coord].y))
+            y_row, x_col = k_coord
+            self.grid[y_row][x_col] = 'x'
+            del self.legal[k_coord]
+
+        else :
+            print("It's OKAY")
+
+
+
 
 
     def coord_random(self):

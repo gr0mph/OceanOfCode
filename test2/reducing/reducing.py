@@ -17,7 +17,7 @@ import unittest
 
 class _reducing(unittest.TestCase):
 
-    def test_global(self):
+    def _global(self):
         for t_r in TREASURE_MAP:
             print(t_r)
 
@@ -31,6 +31,9 @@ class _reducing(unittest.TestCase):
         #    print(l1)
 
         me.update()
+
+        for t_r in me.grid:
+            print(t_r)
 
 
 if __name__ == '__main__':
