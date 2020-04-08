@@ -147,10 +147,16 @@ class PathSolving:
         #coord = next(iter(self.risk))
         #self.update_risk(coord)
 
-        #coord = self.risk[4]
-        #self.update_risk(coord)
-
+        # Work done !
         coord = self.risk[0]
+        self.update_risk(coord)
+
+        # Work done !
+        coord = self.risk[4]
+        self.update_risk(coord)
+
+        # Work done !
+        coord = self.risk[6]
         self.update_risk(coord)
 
         #for coord in self.risk:
@@ -199,6 +205,7 @@ class PathSolving:
                     #print(d1)
                     #iter_dir.pop()
                     print("\t\tNode {} Dir {}".format(n1,d1),end='\'')
+                    y_row, x_col = n1.y, n1.x
                     orientation, y_drow, x_dcol = d1
                     time.sleep(1)
                     new_coord = y_row + y_drow, x_col + x_dcol
@@ -206,7 +213,7 @@ class PathSolving:
                         y_row, x_col = new_coord
                         n1 = legal[new_coord]
                         path_append(n1)
-                        print("\tLen Path {} N1 = {}".format(len(path),path[-1]))
+                        print("\tlegal d1: {} (x:{},y:{})".format(d1,x_col,y_row))
                         iter_dir.append(n1.possible_dir)
                         del legal[new_coord]
 
@@ -217,7 +224,7 @@ class PathSolving:
                                 print(n1)
                             break
                     else :
-                        print("\tnot in legal")
+                        print("\tnot in legal (x:{},y:{})".format( x_col + x_dcol,y_row + y_drow))
                 else:
                     #print("\t\tEnd LOOP n1 {}".format(n1))
                     n1 = path_pop()
