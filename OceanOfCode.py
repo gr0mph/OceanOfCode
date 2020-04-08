@@ -78,10 +78,7 @@ class Node:
              solving.delete.append(coord)
              coord = y_row + y_drow, x_col + x_dcol
              if coord not in solving.dirunknow :
-                 print("UNKNOW 1 JONCTION: {}".format(coord))
                  solving.dirunknow.append(coord)
-
-             print("REDUCE_MAP : {} {}".format(self.y,self.x))
              REDUCE_MAP[self.y][self.x] = 'x'
 
         elif length == 2 :
@@ -89,7 +86,6 @@ class Node:
             self.possible_dir = copy.deepcopy(results)
             self.privileged_dir = None
             solving.risk.append(coord)
-            print("RISK 2 JONCTION: {}".format(coord))
             solving.legal.update( { coord : self } )
         else :
             self.possible_dir = copy.deepcopy(results)
@@ -148,27 +144,17 @@ class PathSolving:
             n1.set_up(x_col,y_row)
             self.grid = n1.update_dir(self,DIRS)
 
-        print()
-        for t1 in self.grid:
-            print(t1)
-
         for coord in self.delete:
             del self.legal[coord]
         self.delete.clear()
 
         for coord in self.dirunknow:
-            print("1) Fucking coord {}".format(coord))
             n1 = self.legal[coord]
-            print(n1)
             y_row, x_col = coord
-
             results = [dir for dir in n1.possible_dir if is_direction_legal(n1,self.legal,dir)]
             n1.possible_dir = results
             if len(n1.possible_dir) <= 2 :
-                print("Very risky : {}".format(n1))
                 self.risk.append(coord)
-
-            print("Fucking coord {}".format(coord))
         self.dirunknow.clear()
 
         for coord in self.risk:
@@ -180,8 +166,6 @@ class PathSolving:
         if k_coord not in self.legal:
             self.grid[y_row][x_col] = 'x'
             return
-
-        print("update_risk : {} len possible dir {}".format(k_coord,len(self.legal[k_coord].possible_dir)))
 
         if len(self.legal[k_coord].possible_dir) == 1 :
             self.grid[y_row][x_col] = 'x'
@@ -206,10 +190,6 @@ class PathSolving:
             # The next risky cell has been already deleted
             # So we can delete this test and check next
             if start not in legal :
-                #y_row, x_col = k_coord
-                #print("REDUCE_MAP (grid): {} {}".format(y_row,x_col))
-                #self.grid[y_row][x_col] = 'x'
-                #del self.legal[k_coord]
                 return
 
             n1 = legal[start]
@@ -258,41 +238,21 @@ class PathSolving:
                     break
 
             if len(path) == 0 :
-                print("delete will be a good idea")
                 for n1 in iter_delete:
-                    print("delete {}".format(n1))
                     y_row, x_col = n1.y, n1.x
                     iter_delete_coord = n1.y, n1.x
                     self.grid[y_row][x_col] = 'x'
-                    print("REDUCE_MAP : (no path iter) {} {}".format(y_row,x_col))
                     del self.legal[iter_delete_coord]
 
                 d2 = OPP_DIRS[direction]
                 risk = the_first_node.y + y1_drow, the_first_node.x + x1_dcol
                 if risk in self.legal:
                     self.legal[risk].possible_dir.remove(d2)
-                    print("RISK: {}".format(risk))
                     self.risk.append(risk)
                 y_row, x_col = k_coord
-                print("REDUCE_MAP : (no path start) {} {}".format(y_row,x_col))
                 self.grid[y_row][x_col] = 'x'
                 del self.legal[k_coord]
                 break
-
-            else :
-                print("OK")
-
-        # if soluce < 2 :
-        #     y_row, x_col = k_coord
-        #     self.grid[y_row][x_col] = 'x'
-        #     for d1 in self.legal[k_coord].possible_dir:
-        #         dir, y_drow, x_dcol = d1
-        #         risk = y_row + y_drow, x_col + x_dcol
-        #         if risk in self.legal :
-        #             d2 = OPP_DIRS[dir]
-        #             self.legal[risk].possible_dir.remove(d2)
-        #             self.risk.append(risk)
-        #     del self.legal[k_coord]
 
     def coord_random(self):
         node = random.choice(list(self.legal))
@@ -783,6 +743,13 @@ def path_solving(game_board,puzzle):
 if __name__ == '__main__':
     read_map()
     t_check_map(TREASURE_MAP)
+
+    kanban_path  = PathSolving(None)
+    kanban_path.set_up(TREASURE_MAP)
+    kanban_path.update()
+
+    TREASURE_MAP = kanban_path.grid
+
     game_board[MY_ID] = Board(game_board[MY_ID])
 
     puzzle = HamiltonSolver(None)
