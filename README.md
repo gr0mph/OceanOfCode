@@ -46,8 +46,8 @@
 **Improve Treasure map**
 
 - [x] Test simplification
-- [ ] Simplify the map
-- [ ] Add border
+- [x] Simplify the map
+- [ ] Improve movement
 
 **Implement strategy**
 
