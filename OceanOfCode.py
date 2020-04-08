@@ -112,6 +112,8 @@ class PathSolving:
         self.dirunknow = []
         self.risk = []
         self.delete = []
+        self.sector = [None] * 10
+        self.last = None
         if clone is not None :
             self.grid = clone.grid
             self.legal = clone.legal
@@ -254,6 +256,16 @@ class PathSolving:
                 del self.legal[k_coord]
                 break
 
+    def update_sector(self):
+        for i1 in range(0,10):
+            self.sector[i1] = {}
+
+        for c1,n1 in self.legal.items():
+            #print(n1,flush=True)
+            sector_id = sector(n1)
+            c1 = n1.y, n1.x
+            self.sector[sector_id][c1] = n1
+
     def coord_random(self):
         node = random.choice(list(self.legal))
         return node
@@ -261,48 +273,55 @@ class PathSolving:
     def read_turn(self,path,turn):
         return path[turn]
 
-    def solve(self):
-        """Generate solutions as lists of coordinates."""
-        start_time = time.time()
-        r , c = self.start
-        path = [self.start]
-        dirs = copy.deepcopy(DIRS)
-        random.shuffle(dirs)
-        dirs = [iter(dirs)]
+    def solve(self,sector_end):
+        y_row, x_col = self.last.y, self.last.x
+        sector_start = sector(self.last)
+        k_coord = y_row, x_col
 
-        # Cache attribute lookups in local variables
+        SECTOR_DEEP = len(self.sector[sector_start])
+        DISTANCE_PATH = 0
+
+        n1 = self.last
+        coord1 = n1.y , n1.x
+        d1 = n1.possible_dir
+        del self.sector[sector_start][coord1]
+
+        path = [n1]
+        iter_dir = []
+        iter_dir.extend(n1.possible_dir)
+
         path_append = path.append
         path_pop = path.pop
-        legal = self.legal
-        legal_add = legal.add
-        legal_remove = legal.remove
-        dirs_append = dirs.append
-        dirs_pop = dirs.pop
+        iter_dir_extend = iter_dir.extend
+        iter_dir_pop = iter_dir.pop
 
         while path:
-            r, c = path[-1]
-            for orientation, dr, dc in dirs[-1]:
-                new_coord = r + dr, c + dc
-                if new_coord in legal:
-                    path_append(new_coord)
-                    legal_remove(new_coord)
-                    dirs_append(iter(DIRS))
-                    if len(path) > DEEP :
-                        return path
-                    if not legal:
-                        return path
+            y_row, x_col = n1.y , n1.x
+            for d1 in iter_dir[::-1]:
+                iter_dir_pop()
+                y_row, x_col = n1.y, n1.x
+                orientation, y_drow, x_dcol = d1
+                new_coord = y_row + y_drow, x_col + x_dcol
+                if new_coord in self.sector[sector_start] :
+                    y_row, x_col = new_coord
+                    n1 = self.sector[sector_start][new_coord]
+                    path_append(n1)
+                    iter_dir_extend(n1.possible_dir)
+                    del self.sector[sector_start][new_coord]
+
+                    # Recompute fucking iter
                     break
 
-                #elif new_coord in self.finish:
-                #    path_append(new_coord)
-                #    dirs_append(iter(DIRS))
-                #    print("HERE3",file=sys.stderr)
-                #    return path
+                if new_coord in self.sector[sector_end] and len(self.sector[sector_start]) == 0 :
+                    y_row, x_col = new_coord
+                    n1 = self.sector[sector_start][new_coord]
+                    path_append(n1)
+                    return path
 
             else:
-                legal_add(path_pop())
-                dirs_pop()
-
+                n1 = path_pop()
+                coord = n1.y , n1.x
+                self.sector[sector_start][coord] = n1
 
 class HamiltonSolver:
     """Solver for a Hamilton Path problem."""
@@ -717,7 +736,7 @@ def update_agent(board):
     return info
 
 def sector(obj1):
-    return 1 + (self.x // 5) + ( (self.y // 5) * 3 )
+    return 1 + (obj1.x // 5) + ( (obj1.y // 5) * 3 )
 
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
