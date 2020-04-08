@@ -23,14 +23,34 @@ class _reducing(unittest.TestCase):
 
     def test_set_up(self):
         print()
+        for t_r in TREASURE_MAP:
+            print(t_r)
+
         me = PathSolving(None)
         me.set_up(TREASURE_MAP)
+
         print("PathSolving Len {}".format(len(me.legal)))
 
-        #for l1 in me.legal:
-        #    print(l1)
-
         me.update()
+        print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
+        # me.update()
+        # print("PathSolving Len {} Len {}".format(len(me.legal),len(me.risk)))
 
         for t_r in me.grid:
             print(t_r)
