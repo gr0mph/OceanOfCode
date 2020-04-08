@@ -56,7 +56,7 @@ class Node:
             self.privileged_dir, self.possible_dir = self.privileged_dir, self.possible_dir
 
     def __str__(self):
-        return f'({self.x},{self.y} poss {self.possible_dir} priv {self.privileged_dir}'
+        return f'(x:{self.x},y:{self.y} poss {self.possible_dir} priv {self.privileged_dir}'
 
     def set_up(self,x_col,y_row):
         self.x, self.y = x_col, y_row
@@ -150,8 +150,11 @@ class PathSolving:
         #coord = self.risk[4]
         #self.update_risk(coord)
 
-        for coord in self.risk:
-            self.update_risk(coord)
+        coord = self.risk[0]
+        self.update_risk(coord)
+
+        #for coord in self.risk:
+        #    self.update_risk(coord)
 
         for i1, coord in enumerate(self.risk):
             print("{} {}".format(i1,coord))
@@ -170,13 +173,17 @@ class PathSolving:
 
         start_time = time.time()
         r , c = self.legal[k_coord].y, self.legal[k_coord].x
-        for d1 in self.legal[k_coord].possible_dir:
+        the_first_node = self.legal[k_coord]
+
+        for d1 in the_first_node.possible_dir:
             print("Starting {}".format(d1))
             dir, y_drow, x_dcol = d1
             start = r + y_drow, c + x_dcol
 
             # Cache attribute lookups in local variables
             legal = copy.deepcopy(self.legal)
+            coord = r , c
+            del legal[coord]
             n1 = legal[start]
             coord = n1.y , n1.x
             del legal[coord]
@@ -185,13 +192,13 @@ class PathSolving:
             path_pop = path.pop
             print("Starting {}".format(n1))
 
-            iter_dir = [n1.possible_dir.pop()]
+            iter_dir = [n1.possible_dir]
             while path:
-                print("\tLen Path {} Path[0] = {}".format(len(path),path[0]))
                 y_row, x_col = path[-1].y , path[-1].x
-                for d1 in iter_dir:
-                    iter_dir.pop()
-                    print("\t\tNode {} Dir {}".format(n1,d1))
+                for d1 in iter_dir[-1]:
+                    #print(d1)
+                    #iter_dir.pop()
+                    print("\t\tNode {} Dir {}".format(n1,d1),end='\'')
                     orientation, y_drow, x_dcol = d1
                     time.sleep(1)
                     new_coord = y_row + y_drow, x_col + x_dcol
@@ -199,7 +206,8 @@ class PathSolving:
                         y_row, x_col = new_coord
                         n1 = legal[new_coord]
                         path_append(n1)
-                        iter_dir.append(n1.possible_dir.pop())
+                        print("\tLen Path {} N1 = {}".format(len(path),path[-1]))
+                        iter_dir.append(n1.possible_dir)
                         del legal[new_coord]
 
                         if len(path) > MIN_REQUIRE_DEEP :
@@ -208,20 +216,20 @@ class PathSolving:
                             for n1 in path:
                                 print(n1)
                             break
-                    elif len(n1.possible_dir) > 0 :
-                        iter_dir.append(n1.possible_dir.pop())
+                    else :
+                        print("\tnot in legal")
                 else:
                     #print("\t\tEnd LOOP n1 {}".format(n1))
                     n1 = path_pop()
                     coord = n1.y , n1.x
                     #print("\t\tPath Pop LOOP n1 {}".format(n1))
-                    if len(n1.possible_dir) == 0 :
-                        print("Delete {}".format(coord))
-                        del legal[coord]
-                    else:
-                        legal[coord] = n1
-                        iter_dir.append(n1.possible_dir.pop())
-
+                    #if len(n1.possible_dir) == 0 :
+                    #    print("Delete {}".format(coord))
+                    #    del legal[coord]
+                    #else:
+                    legal[coord] = n1
+                    #iter_dir.append(n1.possible_dir)
+                    iter_dir.pop()
 
                 if len(path) > MIN_REQUIRE_DEEP:
                     print("FIND 2")
