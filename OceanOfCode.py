@@ -5,6 +5,7 @@ import random
 import time
 import gc
 
+TURN_OPP_SILENCE = 0
 AGENT_TORPEDO = 0   # 3,2,1,0
 #AGENT_SONAR = 1
 AGENT_MINE = 2
@@ -15,6 +16,7 @@ movement_f = { 'N': None,'S': None,'E': None,'W': None }
 #select_a = [ 'TORPEDO' , 'MINE' , 'SILENCE' ]
 select_a = [ 'TORPEDO' , 'SILENCE' , 'MINE' ]
 
+state = 0
 STATE_MOVE=[
 [ 'SILENCE' , 'SONAR' , 'TORPEDO' , 'MINE' ],
 [ 'SONAR' , 'SILENCE' , 'TORPEDO' , 'MINE' ],
@@ -793,6 +795,8 @@ class Board(Submarine):
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
 
+
+
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
 
@@ -808,13 +812,33 @@ def update_order(text):
         except:
             return
 
-def update_agent(board):
-    info = [ None ] * (AGENT_MINE + 1)
-    info[AGENT_TORPEDO] = board.torpedo
-    #info[AGENT_SONAR] = board.sonar
-    info[AGENT_SILENCE] = board.silence
-    info[AGENT_MINE] = board.mine
-    return info
+def update_agent(state,board):
+    STATE_CHECK = {
+    'SILENCE' : board.silence, 'SONAR' : board.sonar,
+    'TORPEDO' : board.torpedo, 'MINE' : board.mine
+    }
+    info = STATE_MOVE[state]
+    text = ''
+    try:
+        text = next(n1 for n1 in info if STATE_CHECK[n1] != 0)
+    except:
+        text = 'TORPEDO'
+    return text
+
+def update_state(state,turn,board,kanban_opp):
+    if state == 0 :
+        if turn > 18 and board.silence == 0 :
+            state += 1
+
+    if state == 1 :
+        if len(kanban_opp.inp) <= 20 :
+            state = 2
+
+    elif state == 2 :
+        if len(kanban_opp.inp) >= 21 :
+            state = 1
+
+    return state
 
 def sector(obj1):
     return 1 + (obj1.x // 5) + ( (obj1.y // 5) * 3 )
@@ -972,6 +996,8 @@ if __name__ == '__main__':
             if f1 is not None:
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
+            if c1 == 'SILENCE':
+                TURN_OPP_SILENCE = 0
 
         print("Kanban Board {} Torpedo {}".format(
         len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
@@ -999,13 +1025,8 @@ if __name__ == '__main__':
                     game_board[MY_ID].write_trigger(mine.x,mine.y)
                     break
 
-        info = update_agent(game_board[MY_ID])
-        text = ''
-        try :
-            i1 = next(i1 for i1,agent1 in enumerate(info) if agent1 != 0)
-            text = select_a[i1]
-        except StopIteration:
-            text = 'SONAR'
+        state = update_state(state,turn,game_board[MY_ID],kanban_opp)
+        text = update_agent(state,game_board[MY_ID])
 
         # From TI reducing work
         y_row, x_col = p1_next.y, p1_next.x
