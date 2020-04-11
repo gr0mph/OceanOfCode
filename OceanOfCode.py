@@ -31,6 +31,10 @@ OPPONENT_SET = set()
 
 HAMILTON = 1
 FIRST = 2
+LAST = 3
+
+# TODO: Can be improved
+SECTOR_REDUCING = (6,3,2,1,4,7,8,9,0)
 
 def read_map():
     global WIDTH, HEIGHT, MY_ID, OPP_ID
@@ -275,6 +279,17 @@ class PathSolving:
         k_last_sector = sector(self.last)
         del self.sector[k_last_sector][k_last_coord]
 
+    def solve_sector(self,next_sector):
+        save = []
+        for type, path in self.solve(next_sector):
+            if len(save) ==  0 and type == FIRST:
+                save = copy.deepcopy(path)  # This data is ephemerate
+            elif len(save) == 0 and type == LAST:
+                save = copy.deepcopy(path)  # This data is ephemerate
+            elif type == HAMILTON :
+                save = path
+        return save
+
     def coord_random(self):
         node = random.choice(list(self.legal))
         return node
@@ -315,6 +330,10 @@ class PathSolving:
                     n1 = self.sector[sector_start][new_coord]
                     path_append(n1)
                     del self.sector[sector_start][new_coord]
+
+                    if len(self.sector[sector_start]) == 0 :
+                        yield (LAST,path)
+
                     iter_dir_append(iter(n1.possible_dir))
                     # Recompute fucking iter
                     break
@@ -782,16 +801,45 @@ if __name__ == '__main__':
     kanban_path.set_up(TREASURE_MAP)
     kanban_path.update()
 
-    TREASURE_MAP = kanban_path.grid
+    REDUCE_MAP = kanban_path.grid
+    print("REDUCE_MAP",file=sys.stderr)
+    t_check_map(REDUCE_MAP)
+
+    # FROM TI reducing.py WORK
+    kanban_path.update_sector()
+
+    # First node
+    coord, kanban_path.last = next(iter(kanban_path.sector[5].items()))
+    del kanban_path.sector[5][coord]
+
+    path_reducing = []
+    iter_sector_reducing, sector_next = iter(SECTOR_REDUCING), -1
+
+    while True:
+        if sector_next != 0 :
+            sector_next = next(iter_sector_reducing)
+            result = kanban_path.solve_sector(sector_next)
+            path_reducing.extend(result[1:])
+            kanban_path.next_sector(path_reducing)
+        else:
+            break
+    # FROM TI reducing.py WORK
+    print("From TI reducing.py OK",file=sys.stderr)
+    for p1 in path_reducing:
+        print("({},{})".format(p1.x,p1.y), file=sys.stderr, flush=True)
+    print("End path reducing",file=sys.stderr)
+
 
     game_board[MY_ID] = Board(game_board[MY_ID])
 
-    puzzle = HamiltonSolver(None)
-    puzzle.set_up(game_board[MY_ID].treasure_map)
-    y_row , x_col = puzzle.coord_random()
-    puzzle.legal.remove( (y_row,x_col) )
-    game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
-    game_board, puzzle, solution = path_solving(game_board,puzzle)
+    # From before TI reducing
+    #puzzle = HamiltonSolver(None)
+    #puzzle.set_up(game_board[MY_ID].treasure_map)
+    #y_row , x_col = puzzle.coord_random()
+    #puzzle.legal.remove( (y_row,x_col) )
+    #game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
+    #game_board, puzzle, solution = path_solving(game_board,puzzle)
+    # From after TI reducing
 
     kanban_opp = StalkAndTorpedo(None)
     kanban_opp.set_up(TREASURE_MAP)
@@ -802,9 +850,20 @@ if __name__ == '__main__':
         MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
     kanban_mine.set_up(MINE_MAP)
 
-    print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
+    #print("{} {}".format(game_board[MY_ID].x,game_board[MY_ID].y))
 
     turn = 1
+
+    # FROM TI reducing.py WORK
+    choice = 0
+
+    iter_forward = iter(path_reducing)
+    iter_backward = iter(reversed(path_reducing))
+
+    p1_forward = next(iter_forward)
+    p1_backward = next(iter_backward)
+    print("{} {}".format(p1_forward.x,p1_forward.y))
+    # FROM TI reducing.py WORK
 
     while True:
         print("TURN {}".format(turn),file=sys.stderr)
@@ -812,35 +871,60 @@ if __name__ == '__main__':
         game_board[OPP_ID] = Board(game_board[OPP_ID])
         update(game_board[MY_ID],game_board[OPP_ID])
 
-        if turn == DEEP + 1 :
-            puzzle = HamiltonSolver(puzzle)
-            game_board, puzzle, solution = path_solving(game_board,puzzle)
+        p1_next = None
+        if choice == 0:
+            p1_next = p1_forward = next(iter_forward)
+            #print('({},{})'.format(p1_forward.x,p1_forward.y),flush=True,end='\t')
 
-            if solution is None :
-                # TODO: WARNING : Write a state in this case
-
-                game_board[MY_ID].treasure_map = TREASURE_MAP
+            if p1_forward == p1_backward:
+                choice = 1
+                iter_forward = iter(path_reducing)
+                p1_forward = next(iter_forward)
                 game_board[MY_ID].write_surface()
-                puzzle.reset()
-                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
 
-            elif len(solution) != (DEEP + 1) :
-                # TODO: WARNING : Write a state in this case
+        elif choice == 1:
+            p1_next = p1_backward = next(iter_backward)
+            #print('({},{})'.format(p1_backward.x,p1_backward.y),flush=True,end='\t')
 
-                game_board[MY_ID].treasure_map = TREASURE_MAP
+            if p1_forward == p1_backward:
+                choice = 0
+                iter_backward = iter(reversed(path_reducing))
+                p1_backward = next(iter_backward)
                 game_board[MY_ID].write_surface()
-                puzzle.reset()
-                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
+                p1_next = p1_forward = next(iter_forward)
 
-            else :
-                turn = 1
+        # From previously START
+        #if turn == DEEP + 1 :
+        #    puzzle = HamiltonSolver(puzzle)
+        #    game_board, puzzle, solution = path_solving(game_board,puzzle)
+#
+#            if solution is None :
+#                # TODO: WARNING : Write a state in this case
+#
+#                game_board[MY_ID].treasure_map = TREASURE_MAP
+#                game_board[MY_ID].write_surface()
+#                puzzle.reset()
+#                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
+#
+#            elif len(solution) != (DEEP + 1) :
+#                # TODO: WARNING : Write a state in this case
+#
+#                game_board[MY_ID].treasure_map = TREASURE_MAP
+#                game_board[MY_ID].write_surface()
+#                puzzle.reset()
+#                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
+#
+#            else :
+#                turn = 1
+#
+#        if turn == 1 and game_board[MY_ID].silence == 0:
+#            y_row , x_col = puzzle.read_turn(solution,turn)
+#            dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+#            game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
+#            game_board[MY_ID].write_silence(dir,1)
+#            turn += 1
+        # From previously END
 
-        if turn == 1 and game_board[MY_ID].silence == 0:
-            y_row , x_col = puzzle.read_turn(solution,turn)
-            dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-            game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
-            game_board[MY_ID].write_silence(dir,1)
-            turn += 1
 
         #t_check_map(game_board[MY_ID].treasure_map)
         print("Position (y:{},x:{})".format(game_board[MY_ID].y,game_board[MY_ID].x),file=sys.stderr)
@@ -888,10 +972,19 @@ if __name__ == '__main__':
         except StopIteration:
             text = 'SONAR'
 
-        if turn > 0 and turn < DEEP + 1 :
-            y_row , x_col = puzzle.read_turn(solution,turn)
-            dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-            game_board[MY_ID].write_move(dir,text)
-            turn += 1
+        # Before previously
+        #if turn > 0 and turn < DEEP + 1 :
+        #    y_row , x_col = puzzle.read_turn(solution,turn)
+        #    dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+        #    game_board[MY_ID].write_move(dir,text)
+        #    turn += 1
+        # Before previously end
 
+        # From TI reducing work
+        y_row, x_col = p1_next.y, p1_next.x
+        dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+        game_board[MY_ID].write_move(dir,text)
+        # End From TI reducing work
+
+        turn += 1
         print(game_board[MY_ID].out)
