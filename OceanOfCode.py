@@ -438,12 +438,6 @@ class HamiltonSolver:
                         return path
                     break
 
-                #elif new_coord in self.finish:
-                #    path_append(new_coord)
-                #    dirs_append(iter(DIRS))
-                #    print("HERE3",file=sys.stderr)
-                #    return path
-
             else:
                 legal_add(path_pop())
                 dirs_pop()
@@ -813,6 +807,7 @@ if __name__ == '__main__':
     del kanban_path.sector[5][coord]
 
     path_reducing = []
+    path_reducing.append(kanban_path.last)
     iter_sector_reducing, sector_next = iter(SECTOR_REDUCING), -1
 
     while True:
@@ -823,23 +818,8 @@ if __name__ == '__main__':
             kanban_path.next_sector(path_reducing)
         else:
             break
-    # FROM TI reducing.py WORK
-    print("From TI reducing.py OK",file=sys.stderr)
-    for p1 in path_reducing:
-        print("({},{})".format(p1.x,p1.y), file=sys.stderr, flush=True)
-    print("End path reducing",file=sys.stderr)
-
 
     game_board[MY_ID] = Board(game_board[MY_ID])
-
-    # From before TI reducing
-    #puzzle = HamiltonSolver(None)
-    #puzzle.set_up(game_board[MY_ID].treasure_map)
-    #y_row , x_col = puzzle.coord_random()
-    #puzzle.legal.remove( (y_row,x_col) )
-    #game_board[MY_ID].x, game_board[MY_ID].y = x_col, y_row
-    #game_board, puzzle, solution = path_solving(game_board,puzzle)
-    # From after TI reducing
 
     kanban_opp = StalkAndTorpedo(None)
     kanban_opp.set_up(TREASURE_MAP)
@@ -872,58 +852,42 @@ if __name__ == '__main__':
         update(game_board[MY_ID],game_board[OPP_ID])
 
         p1_next = None
-        if choice == 0:
-            p1_next = p1_forward = next(iter_forward)
-            #print('({},{})'.format(p1_forward.x,p1_forward.y),flush=True,end='\t')
+        need_surface = 0
 
-            if p1_forward == p1_backward:
-                choice = 1
-                iter_forward = iter(path_reducing)
-                p1_forward = next(iter_forward)
-                game_board[MY_ID].write_surface()
+        for i1 in range(2):
 
-        elif choice == 1:
-            p1_next = p1_backward = next(iter_backward)
-            #print('({},{})'.format(p1_backward.x,p1_backward.y),flush=True,end='\t')
+            if i1 == 0 and game_board[MY_ID].silence != 0:
+                continue
 
-            if p1_forward == p1_backward:
-                choice = 0
-                iter_backward = iter(reversed(path_reducing))
-                p1_backward = next(iter_backward)
-                game_board[MY_ID].write_surface()
+            if i1 == 1 and need_surface == 1 :
+                continue
+
+            if choice == 0:
                 p1_next = p1_forward = next(iter_forward)
 
-        # From previously START
-        #if turn == DEEP + 1 :
-        #    puzzle = HamiltonSolver(puzzle)
-        #    game_board, puzzle, solution = path_solving(game_board,puzzle)
-#
-#            if solution is None :
-#                # TODO: WARNING : Write a state in this case
-#
-#                game_board[MY_ID].treasure_map = TREASURE_MAP
-#                game_board[MY_ID].write_surface()
-#                puzzle.reset()
-#                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
-#
-#            elif len(solution) != (DEEP + 1) :
-#                # TODO: WARNING : Write a state in this case
-#
-#                game_board[MY_ID].treasure_map = TREASURE_MAP
-#                game_board[MY_ID].write_surface()
-#                puzzle.reset()
-#                puzzle.legal.remove( (game_board[MY_ID].y,game_board[MY_ID].x) )
-#
-#            else :
-#                turn = 1
-#
-#        if turn == 1 and game_board[MY_ID].silence == 0:
-#            y_row , x_col = puzzle.read_turn(solution,turn)
-#            dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-#            game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
-#            game_board[MY_ID].write_silence(dir,1)
-#            turn += 1
-        # From previously END
+                if p1_forward == p1_backward:
+                    choice = 1
+                    iter_forward = iter(path_reducing)
+                    p1_forward = next(iter_forward)
+                    need_surface = 1
+                    #game_board[MY_ID].write_surface()
+
+            elif choice == 1:
+                p1_next = p1_backward = next(iter_backward)
+
+                if p1_forward == p1_backward:
+                    choice = 0
+                    iter_backward = iter(reversed(path_reducing))
+                    p1_backward = next(iter_backward)
+                    need_surface = 1
+                    #game_board[MY_ID].write_surface()
+
+            if i1 == 0 and need_surface == 0:
+                y_row, x_col = p1_next.y, p1_next.x
+                dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+                game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
+                game_board[MY_ID].write_silence(dir,1)
+
 
 
         #t_check_map(game_board[MY_ID].treasure_map)
@@ -972,18 +936,13 @@ if __name__ == '__main__':
         except StopIteration:
             text = 'SONAR'
 
-        # Before previously
-        #if turn > 0 and turn < DEEP + 1 :
-        #    y_row , x_col = puzzle.read_turn(solution,turn)
-        #    dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-        #    game_board[MY_ID].write_move(dir,text)
-        #    turn += 1
-        # Before previously end
-
         # From TI reducing work
         y_row, x_col = p1_next.y, p1_next.x
         dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
         game_board[MY_ID].write_move(dir,text)
+
+        if need_surface == 1:
+            game_board[MY_ID].write_surface()
         # End From TI reducing work
 
         turn += 1
