@@ -88,19 +88,24 @@ class _stalking(unittest.TestCase):
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
-    def _read_silence(self):
+    def test_read_silence(self):
         me = StalkAndTorpedo(None)
         me.set_up(TREASURE_MAP)
         print(len(me.inp))
 
         read_torpedo = StalkAndTorpedo.read_torpedo
-        read_silence = StalkAndTorpedo.read_silence
+        read_silence = StalkAndTorpedo.read_silence2
+        read_move = StalkAndTorpedo.read_move
 
         me.update(read_torpedo,(8,4))
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
         me.update(read_torpedo,(5,6))
+        me = StalkAndTorpedo(me)
+        print(len(me.inp))
+
+        me.update(read_move,['S'])
         me = StalkAndTorpedo(me)
         print(len(me.inp))
 
@@ -158,7 +163,7 @@ class _stalking(unittest.TestCase):
         for c1, f1, d1 in update_order('NA'):
             print("c1 {} f1 {} d1 {}".format(c1,f1,d1))
 
-    def test_silence(self):
+    def _silence(self):
         for t_r in TREASURE_MAP:
             print(t_r)
 

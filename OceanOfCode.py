@@ -15,6 +15,12 @@ movement_f = { 'N': None,'S': None,'E': None,'W': None }
 #select_a = [ 'TORPEDO' , 'MINE' , 'SILENCE' ]
 select_a = [ 'TORPEDO' , 'SILENCE' , 'MINE' ]
 
+STATE_MOVE=[
+[ 'SILENCE' , 'SONAR' , 'TORPEDO' , 'MINE' ],
+[ 'SONAR' , 'SILENCE' , 'TORPEDO' , 'MINE' ],
+[ 'TORPEDO' , 'MINE' , 'SILENCE' , 'SONAR' ]
+]
+
 
 WIDTH, HEIGHT, MY_ID, OPP_ID = 0 , 0, 0, 0
 TREASURE_MAP = []
@@ -60,6 +66,7 @@ def t_check_map(TREASURE_MAP):
 
 DEEP = 11
 DEEP_SILENCE = 14 #26
+DEEP_SILENCE2 = 21
 SEARCH_OPP_TORPEDO = 20
 SEARCH_OPP_TRIGGER = 5
 
@@ -549,6 +556,12 @@ class StalkAndLegal():
                 return False
         return True
 
+STALKING_SILENCE = {
+'E':( (-4,0),(-3,0),(-2,0),(-1,0),(0,1),(0,2),(0,3),(0,4),(1,0),(2,0),(3,0),(4,0) ),
+'W':( (-4,0),(-3,0),(-2,0),(-1,0),(0,-1),(0,-2),(0,-3),(0,-4),(1,0),(2,0),(3,0),(4,0) ),
+'N':( (0,-1),(0,-2),(0,-3),(0,-4),(-4,0),(-3,0),(-2,0),(-1,0),(0,1),(0,2),(0,3),(0,4) ),
+'S':( (0,-1),(0,-2),(0,-3),(0,-4),(4,0),(3,0),(2,0),(1,0),(0,1),(0,2),(0,3),(0,4) )
+}
 
 class StalkAndTorpedo():
 
@@ -556,8 +569,10 @@ class StalkAndTorpedo():
         self.treasure_map = None
         self.out = set()
         self.inp = set()
+        self.previous_move = ''
         if clone is not None :
             self.treasure_map, self.inp = clone.treasure_map, clone.out
+            self.previous_move = clone.previous_move
 
     def __str__(self):
         text = ''
@@ -586,6 +601,7 @@ class StalkAndTorpedo():
     def read_move(self,data):
         data = data[0]
         d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
+        self.previous_move = d
         for board,stalk in self.inp:
             result = stalk.read_move(board,dy_row,dx_col)
             if result == True :
@@ -597,6 +613,13 @@ class StalkAndTorpedo():
             board.life -= 1
             if board.life > 0 :
                 # Reset TREASURE MAP for board, don't know If it's very necessary
+                board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                stalk.read_surface(board)
+                self.out.add( (board,stalk) )
+
+    def read_surface2(self,data):
+        for board, stalk in self.inp:
+            if data == sector(board):
                 board.treasure_map = copy.deepcopy(TREASURE_MAP)
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
@@ -632,12 +655,32 @@ class StalkAndTorpedo():
                         else :
                             break
 
+    def read_silence2(self,data):
+        inp = self.inp
+        out_add = self.out.add
+        if len(self.inp) >= DEEP_SILENCE2:
+            self.inp.clear()
+            self.set_up(self.treasure_map)
+            self.out = self.inp
+
+        else :
+            for board, stalk in inp:
+                out_add( (board, stalk))
+
+                t_stalking_silence = STALKING_SILENCE[self.previous_move]
+                for y_drow,x_dcol in t_stalking_silence:
+                    board1, stalk1 = Board(board), StalkAndLegal(stalk)
+                    board1.y += y_drow
+                    board1.x += x_dcol
+                    out_add( (board1,stalk1) )
+
+
 READ_COMMAND = [
 ( 'MOVE' , StalkAndTorpedo.read_move ),
-( 'SURFACE' , StalkAndTorpedo.read_surface ),
+( 'SURFACE' , StalkAndTorpedo.read_surface2 ),
 ( 'TORPEDO' , StalkAndTorpedo.read_torpedo ),
 ( 'SONAR' , None ),
-( 'SILENCE' , StalkAndTorpedo.read_silence )
+( 'SILENCE' , StalkAndTorpedo.read_silence2 )
 ]
 
 MINE_MAP = []
@@ -750,8 +793,6 @@ class Board(Submarine):
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
 
-
-
 def update(me,opp):
     me.x, me.y, me.life, opp.life, me.torpedo, me.sonar, me.silence, me.mine = [int(i) for i in input().split()]
 
@@ -815,21 +856,39 @@ if __name__ == '__main__':
     kanban_path.update_sector()
 
     # First node
-    coord, kanban_path.last = next(iter(kanban_path.sector[5].items()))
+    previous_sector = 5
+    previous_sector_a, previous_sector_b = 0,0
+    coord, kanban_path.last = next(iter(kanban_path.sector[previous_sector].items()))
     del kanban_path.sector[5][coord]
 
     path_reducing = []
     path_reducing.append(kanban_path.last)
-    iter_sector_reducing, sector_next = iter(SECTOR_REDUCING), -1
+    iter_sector_reducing, sector_next = None, -1
 
     while True:
-        if sector_next != 0 :
-            sector_next = next(iter_sector_reducing)
-            result = kanban_path.solve_sector(sector_next)
+        if sector_next == 0 :
+            break
+
+        elif sector_next == -1:
+            k_next_tuple = SECTOR_TRANSIT[previous_sector]
+            result = kanban_path.solve_sector(k_next_tuple)
             path_reducing.extend(result[1:])
             kanban_path.next_sector(path_reducing)
-        else:
-            break
+            if previous_sector_a == 0:
+                previous_sector = previous_sector_a = sector(path_reducing[-1])
+            else :
+                previous_sector = previous_sector_b = sector(path_reducing[-1])
+                t_sector_reducing = (previous_sector_a,previous_sector_b)
+                iter_sector_reducing = iter(SECTOR_REDUCING[t_sector_reducing])
+                next(iter_sector_reducing)
+                sector_next = next(iter_sector_reducing)
+
+        else :
+            sector_next = next(iter_sector_reducing)
+            print("Sector next: {}".format(sector_next),file=sys.stderr)
+            result = kanban_path.solve_sector([sector_next])
+            path_reducing.extend(result[1:])
+            kanban_path.next_sector(path_reducing)
 
     game_board[MY_ID] = Board(game_board[MY_ID])
 
