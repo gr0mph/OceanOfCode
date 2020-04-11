@@ -34,7 +34,17 @@ FIRST = 2
 LAST = 3
 
 # TODO: Can be improved
-SECTOR_REDUCING = (6,3,2,1,4,7,8,9,0)
+SECTOR_REDUCING = {
+(6,3):(6,3,2,1,4,7,8,9,0),(6,9):(6,9,8,7,4,1,2,3,0),
+(8,9):(8,9,6,3,2,1,4,7,0),(8,7):(8,7,4,1,2,3,6,9,0),
+(4,7):(4,7,8,9,6,3,2,1,0),(4,1):(4,1,2,3,6,9,8,7,0),
+(2,1):(2,1,4,7,8,9,6,3,0),(2,3):(2,3,6,9,8,7,4,1,0)
+}
+
+SECTOR_TRANSIT = {
+5: (6,8,4,2),6: (3,9),8: (9,7),4: (7,1),2: (1,3)
+}
+
 
 def read_map():
     global WIDTH, HEIGHT, MY_ID, OPP_ID
@@ -204,33 +214,33 @@ class PathSolving:
             n1 = legal[start]
             coord = n1.y , n1.x
             del legal[coord]
+
             path = [n1]
-            iter_dir = []
-            iter_delete = []
-            iter_dir.extend(n1.possible_dir)
-            iter_delete.append(n1)
+            iter_dir = [iter(n1.possible_dir)]
+            iter_delete = [n1]
 
             path_append = path.append
             path_pop = path.pop
             iter_dir_extend = iter_dir.extend
+            iter_dir_append = iter_dir.append
             iter_dir_pop = iter_dir.pop
 
             while path:
-                y_row, x_col = path[-1].y , path[-1].x
-                for d1 in iter_dir[::-1]:
+                n1 = path[-1]
+                y_row, x_col = n1.y , n1.x
+                for d1 in iter_dir[-1]:
 
-                    iter_dir_pop()
-                    y_row, x_col = n1.y, n1.x
                     orientation, y_drow, x_dcol = d1
                     new_coord = y_row + y_drow, x_col + x_dcol
+
                     if new_coord in legal and len(legal[new_coord].possible_dir) > 0 :
-                        y_row, x_col = new_coord
                         n1 = legal[new_coord]
                         path_append(n1)
+                        del legal[new_coord]
+
                         if n1 not in iter_delete:
                             iter_delete.append(n1)
-                        iter_dir_extend(n1.possible_dir)
-                        del legal[new_coord]
+                        iter_dir_append(iter(n1.possible_dir))
 
                         if len(path) > MIN_REQUIRE_DEEP :
                             soluce += 1
@@ -239,6 +249,7 @@ class PathSolving:
                         break
 
                 else:
+                    iter_dir.pop()
                     n1 = path_pop()
                     coord = n1.y , n1.x
                     legal[coord] = n1
@@ -338,18 +349,19 @@ class PathSolving:
                     # Recompute fucking iter
                     break
 
-                if new_coord in self.sector[sector_end] and len(self.sector[sector_start]) == 0 :
-                    y_row, x_col = new_coord
-                    n1 = self.sector[sector_end][new_coord]
-                    path_append(n1)
-                    yield (HAMILTON, path)
-                    return
+                for k_end in sector_end:
+                    if new_coord in self.sector[k_end] and len(self.sector[sector_start]) == 0 :
+                        y_row, x_col = new_coord
+                        n1 = self.sector[k_end][new_coord]
+                        path_append(n1)
+                        yield (HAMILTON, path)
+                        return
 
-                if new_coord in self.sector[sector_end] and first == 0:
-                    first = 1
-                    path_append(self.sector[sector_end][new_coord])
-                    yield (FIRST, path)
-                    path_pop()
+                    if new_coord in self.sector[k_end] and first == 0:
+                        first = 1
+                        path_append(self.sector[k_end][new_coord])
+                        yield (FIRST, path)
+                        path_pop()
 
             else:
                 iter_dir.pop()
