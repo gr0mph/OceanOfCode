@@ -29,6 +29,9 @@ GET_DIRS = { (-1,0) : 'N' , (1,0) : 'S' , (0,1) : 'E' , (0,-1) : 'W' }
 OPP_DIRS = { 'N' : ('S',1, 0) , 'S' : ('N',-1, 0) , 'E' : ('W',0, -1) , 'W' : ('E',0, 1) }
 OPPONENT_SET = set()
 
+HAMILTON = 1
+FIRST = 2
+
 def read_map():
     global WIDTH, HEIGHT, MY_ID, OPP_ID
     WIDTH, HEIGHT, MY_ID = [int(i) for i in input().split()]
@@ -266,6 +269,12 @@ class PathSolving:
             c1 = n1.y, n1.x
             self.sector[sector_id][c1] = n1
 
+    def next_sector(self,path):
+        self.last = path[-1]
+        k_last_coord = self.last.y, self.last.x
+        k_last_sector = sector(self.last)
+        del self.sector[k_last_sector][k_last_coord]
+
     def coord_random(self):
         node = random.choice(list(self.legal))
         return node
@@ -284,25 +293,21 @@ class PathSolving:
         n1 = self.last
         coord1 = n1.y , n1.x
         d1 = n1.possible_dir
-        del self.sector[sector_start][coord1]
 
         path = [n1]
-        iter_dir = []
-        iter_dir.extend(n1.possible_dir)
-        dirs = [iter(DIRS)]
+        iter_dir = [iter(n1.possible_dir)]
 
         path_append = path.append
         path_pop = path.pop
         iter_dir_extend = iter_dir.extend
+        iter_dir_append = iter_dir.append
         iter_dir_pop = iter_dir.pop
-        dirs_append = dirs.append
-        dirs_pop = dirs.pop
+        first = 0
 
         while path:
             n1 = path[-1]
             y_row, x_col = n1.y , n1.x
-            for d1 in dirs[-1]:
-            #for d1 in iter_dir[::-1]:
+            for d1 in iter_dir[-1]:
 
                 orientation, y_drow, x_dcol = d1
                 new_coord = y_row + y_drow, x_col + x_dcol
@@ -310,8 +315,7 @@ class PathSolving:
                     n1 = self.sector[sector_start][new_coord]
                     path_append(n1)
                     del self.sector[sector_start][new_coord]
-                    dirs_append(iter(DIRS))
-                    #iter_dir_extend(n1.possible_dir)
+                    iter_dir_append(iter(n1.possible_dir))
                     # Recompute fucking iter
                     break
 
@@ -319,11 +323,17 @@ class PathSolving:
                     y_row, x_col = new_coord
                     n1 = self.sector[sector_end][new_coord]
                     path_append(n1)
-                    return path
+                    yield (HAMILTON, path)
+                    return
+
+                if new_coord in self.sector[sector_end] and first == 0:
+                    first = 1
+                    path_append(self.sector[sector_end][new_coord])
+                    yield (FIRST, path)
+                    path_pop()
 
             else:
-                dirs_pop()
-                #iter_dir.pop()
+                iter_dir.pop()
                 n1 = path_pop()
                 coord = n1.y , n1.x
                 self.sector[sector_start][coord] = n1
