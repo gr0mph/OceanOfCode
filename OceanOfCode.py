@@ -931,19 +931,33 @@ def path_solving(game_board,puzzle):
 OBSERVER_TORPEDO = (
 (-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)
 )
+BOARD_OBSERVER_TORPEDO = (
+(-4,0),
+(-3,-1),(-3,0),(-3,1),
+(-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
+(-1,-3),(-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),(-1,3),
+(0,-4),(0,-3),(0,-2),(0,-1),(0,0),(0,1),(0,2),(0,3),(0,4),
+(1,-3),(1,-2),(1,-1),(1,0),(1,1),(1,2),(1,3),
+(2,-2),(2,-1),(2,0),(2,1),(2,2),
+(3,-1),(3,0),(3,1),
+(4,0)
+)
 
 class TorpedoObserver():
 
     def __init__(self,clone):
         self.dict_torpedo = {}
-        for y_drow, x_dcol in OBSERVER_TORPEDO:
+        for y_drow, x_dcol in BOARD_OBSERVER_TORPEDO:
             self.dict_torpedo[(y_drow, x_dcol)] = 0
         self.torpedo = (-1,-1)
 
-        pass
+    def __str__(self):
+        y, x = self.torpedo
+        return f'Torpedo Obs: ({y},{x})'
 
     def reset(self):
-        self.dict_torpedo = self.dict_torpedo.from_keys(self.dict_torpedo,0)
+        for y_drow, x_dcol in BOARD_OBSERVER_TORPEDO:
+            self.dict_torpedo[(y_drow, x_dcol)] = 0
         self.torpedo = (-1,-1)
 
     def notify_iter(self,submarine,kanban_mine,k_board_opp,k_stalk_opp):
@@ -951,17 +965,26 @@ class TorpedoObserver():
         if distance > 4 :
             pass
         else :
+            print("OPP ({},{}) ME ({},{})".format(k_board_opp.x,k_board_opp.y,
+            submarine.x,submarine.y),end='\t')
             y_diff = submarine.y - k_board_opp.y
             x_diff = submarine.x - k_board_opp.x
             self.dict_torpedo[(y_diff,x_diff)] += 2
-            for y_drow, x_dcol in OBSERVER_TORPEDO:
-                y_diff_drow,x_diff_dcol = y_diff + y_drow, x_diff + x_dcol
-                if (y_diff_drow,x_diff_dcol) in self.dict_torpedo:
-                    self.dict_torpedo[(y_diff_drow,x_diff_dcol)] += 1
+            #for y_drow, x_dcol in OBSERVER_TORPEDO:
+
+            #    y_diff_drow,x_diff_dcol = y_diff + y_drow, x_diff + x_dcol
+            #    if (y_diff_drow,x_diff_dcol) in self.dict_torpedo:
+            #        self.dict_torpedo[(y_diff_drow,x_diff_dcol)] += 1
         return True
 
     def notify_else(self,submarine,kanban_mine,kanban_opp):
-        y_drow,x_dcol = max(self.dict_torpedo.items, key = self.dict_torpedo.get)
+        y_drow,x_dcol = max(self.dict_torpedo, key = self.dict_torpedo.get)
+
+        for k_coord, k_value in self.dict_torpedo.items():
+            k_dy, k_dx = k_coord
+            k_y, k_x = submarine.y + k_dy, submarine.x + k_dx
+            print("({}, {}) d ({},{}) note {}".format(k_x,k_y,k_dx,k_dy,k_value))
+
         if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
             y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
             submarine.write_torpedo(y_row,x_col)
@@ -973,30 +996,41 @@ class TorpedoObserver():
             return False
 
     def notify_check(self,submarine,kanban_mine,kanban_opp):
+        k_coord = self.torpedo
+        y_torpedo, x_torpedo = k_coord
         if self.lost_life == 0:
-            coord = self.torpedo
             all_set = set()
-            all_set.add(coord)
-            for y_drow, x_dcol in OBSERVER_TORPEDO:
-                y_diff_drow,x_diff_dcol = y_diff + y_drow, x_diff + x_dcol
+            all_set.add(k_coord)
+            for y_drow, x_dcol not in OBSERVER_TORPEDO:
+                y_diff_drow,x_diff_dcol = y_torpedo + y_drow, x_torpedo + x_dcol
                 all_set.add( (y_diff_drow,x_diff_dcol) )
 
-            for board,stalk in self.inp:
+            print("SET")
+            for k_y, k_x in all_set:
+                print("({},{})".format(k_x,k_y),end='\n')
+            print()
+            print()
+
+            for board,stalk in kanban_opp.inp:
                 board_coord = board.y, board.x
                 if board_coord not in all_set:
                     kanban_opp.out.add( (board,stalk) )
+                else:
+                    print("IS ({},{}) IN SET".format(board.x,board.y),end='\t')
+                    print("TRUE")
 
+            print(len(kanban_opp.out))
             return True
 
         elif self.nb_observer_check == 1 :
 
             if self.lost_life == 1:
-                coord = self.torpedo
+                all_set = set()
                 for y_drow, x_dcol in OBSERVER_TORPEDO:
-                    y_diff_drow,x_diff_dcol = y_diff + y_drow, x_diff + x_dcol
+                    y_diff_drow,x_diff_dcol = y_torpedo + y_drow, x_torpedo + x_dcol
                     all_set.add( (y_diff_drow,x_diff_dcol) )
 
-                for board,stalk in self.inp:
+                for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
                         kanban_opp.out.add( (board,stalk) )
@@ -1004,11 +1038,10 @@ class TorpedoObserver():
                 return True
 
             elif self.lost_life == 2:
-                coord = self.torpedo
                 all_set = set()
-                all_set.add(coord)
+                all_set.add(k_coord)
 
-                for board,stalk in self.inp:
+                for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
                         kanban_opp.out.add( (board,stalk) )
@@ -1030,14 +1063,16 @@ class ObserverQueue():
     def detach(self,instance):
         self.observer.remove(instance)
 
-    def clear(self):
+    def reset(self):
+        for instance in self.observer:
+            instance.reset()
         self.observer.clear()
         self.lost_life = 0
 
     def iterator(self,submarine,kanban_opp,kanban_mine):
         length = len(kanban_opp.inp)
 
-        for k_coord_opp, k_stalk_opp in kanban_opp.inp:
+        for k_board_opp, k_stalk_opp in kanban_opp.inp:
 
             instance, success = None, False
             for instance in self.observer:
@@ -1057,10 +1092,14 @@ class ObserverQueue():
             if success == False :
                 pass
             else :
+                print("SUCCESS {}".format(len(kanban_opp.out)))
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
         # Remove observer
-        self.clear()
+        self.reset()
+
+        # New kanban opp with new reference
+        return kanban_opp
 
 
 if __name__ == '__main__':
