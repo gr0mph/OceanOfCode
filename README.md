@@ -28,7 +28,7 @@
 - [x] Create a set of possible submarine
 - [x] On each turn update set and delete impossible Submarine
 - [x] Find a bug ... (no submarine)
-- [x] Find the good submarine (***can be improved***)
+- [x] Find the good submarine (***can be improved:  DONE silence improved***)
 - [x] Torpedo it
 
 **Mining and triggering**
@@ -41,7 +41,7 @@
 
 - [x] Improve stalking
 - [x] Add sonar, in the strategy to counter silence command
-- [ ] Check life of the opponent to determine position
+- [ ] Check life of the opponent to determine position (***in progress***)
 
 **Improve Treasure map**
 
@@ -51,5 +51,9 @@
 
 **Implement strategy**
 
+- [ ] ***Easy*** Add Observer in last loop (***in progress***)
 - [ ] ***Easy*** Implement Design Pattern strategy
 - [ ] ***Hard*** Implement Deep Q for strategy (what states...)
+
+**Objective**
+- [ ] Try to reach gold
