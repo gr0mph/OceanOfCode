@@ -40,7 +40,7 @@
 **Add Geolocalisation**
 
 - [x] Improve stalking
-- [ ] Add sonar, in the strategy to counter silence command
+- [x] Add sonar, in the strategy to counter silence command
 - [ ] Check life of the opponent to determine position
 
 **Improve Treasure map**

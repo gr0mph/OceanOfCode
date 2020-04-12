@@ -70,8 +70,8 @@ def t_check_map(TREASURE_MAP):
 DEEP = 11
 DEEP_SILENCE = 14 #26
 DEEP_SILENCE2 = 31
-SEARCH_OPP_TORPEDO = 20
-SEARCH_OPP_TRIGGER = 10
+SEARCH_OPP_TORPEDO = 10
+SEARCH_OPP_TRIGGER = 15
 
 class Node:
 
@@ -90,8 +90,10 @@ class Node:
 
     def update_dir(self,solving,DIRS):
         REDUCE_MAP = solving.grid
-        self.privileged_dir = copy.deepcopy(DIRS)
-        self.possible_dir = copy.deepcopy(DIRS)
+        #self.privileged_dir = copy.deepcopy(DIRS)
+        #self.possible_dir = copy.deepcopy(DIRS)
+        self.privileged_dir = copy.copy(DIRS)
+        self.possible_dir = copy.copy(DIRS)
         legal = solving.legal
 
         results = [dir for dir in DIRS if is_direction_legal(self,legal,dir)]
@@ -110,12 +112,14 @@ class Node:
 
         elif length == 2 :
             #if length <= 2 :
-            self.possible_dir = copy.deepcopy(results)
+            #self.possible_dir = copy.deepcopy(results)
+            self.possible_dir = copy.copy(results)
             self.privileged_dir = None
             solving.risk.append(coord)
             solving.legal.update( { coord : self } )
         else :
-            self.possible_dir = copy.deepcopy(results)
+            #self.possible_dir = copy.deepcopy(results)
+            self.possible_dir = copy.copy(results)
             self.privileged_dir = None
             solving.legal.update( { coord : self } )
 
@@ -148,7 +152,8 @@ class PathSolving:
             self.risk = clone.risk
 
     def set_up(self,TREASURE_MAP):
-        self.grid = copy.deepcopy(TREASURE_MAP)
+        #self.grid = copy.deepcopy(TREASURE_MAP)
+        self.grid = copy.copy(TREASURE_MAP)
         self.start = None
         self.legal = {} #set()
         self.risk = []
@@ -212,7 +217,8 @@ class PathSolving:
             direction, y1_drow, x1_dcol = d1
             start = r + y1_drow, c + x1_dcol
 
-            legal = copy.deepcopy(self.legal)
+            #legal = copy.deepcopy(self.legal)
+            legal = copy.copy(self.legal)
             coord = r , c
             del legal[coord]
 
@@ -304,9 +310,11 @@ class PathSolving:
         save = []
         for type, path in self.solve(next_sector):
             if len(save) ==  0 and type == FIRST:
-                save = copy.deepcopy(path)  # This data is ephemerate
+                #save = copy.deepcopy(path)  # This data is ephemerate
+                save = copy.copy(path)  # This data is ephemerate
             elif len(save) == 0 and type == LAST:
-                save = copy.deepcopy(path)  # This data is ephemerate
+                #save = copy.deepcopy(path)  # This data is ephemerate
+                save = copy.copy(path)  # This data is ephemerate
             elif type == HAMILTON :
                 save = path
         return save
@@ -618,14 +626,16 @@ class StalkAndTorpedo():
             board.life -= 1
             if board.life > 0 :
                 # Reset TREASURE MAP for board, don't know If it's very necessary
-                board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                #board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                board.treasure_map = copy.copy(TREASURE_MAP)
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
 
     def read_surface2(self,data):
         for board, stalk in self.inp:
             if int(data[0]) == sector(board):
-                board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                #board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                board.treasure_map = copy.copy(TREASURE_MAP)
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
 
@@ -685,6 +695,7 @@ class StalkAndTorpedo():
         inp = self.inp
         dico_coord = {}
         out_add = self.out.add
+
         for board, stalk in inp:
             k_coord = board.y , board.x
             if k_coord in dico_coord :
@@ -693,25 +704,30 @@ class StalkAndTorpedo():
                 dico_coord[k_coord] = [ (board,stalk) ]
 
         for k_coord, d1 in dico_coord.items():
-            board, stalk = None, None
+            board, stalk = None, StalkAndLegal(None)
+            legal_add = stalk.legal.add
             for board1,stalk1 in d1:
                 if board == None:
                     board = board1
-                    stalk = stalk1
-                stalk.legal.union(stalk1.legal)
+
+                for coord1 in stalk1.legal:
+                    legal_add(coord1)
+
             out_add( (board,stalk) )
 
     def update_sonar(self,sonar_result,previous):
         if sonar_result == 'Y':
             for board, stalk in self.inp:
                 if previous == sector(board):
-                    board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                    #board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                    board.treasure_map = copy.copy(TREASURE_MAP)
                     stalk.read_surface(board)
                     self.out.add( (board,stalk) )
         else:
             for board, stalk in self.inp:
                 if previous != sector(board):
-                    board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                    #board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                    board.treasure_map = copy.copy(TREASURE_MAP)
                     stalk.read_surface(board)
                     self.out.add( (board,stalk) )
 
@@ -878,11 +894,11 @@ def update_state(state,turn,board,kanban_opp):
             state += 1
 
     if state == 1 :
-        if len(kanban_opp.inp) <= 20 :
+        if len(kanban_opp.inp) <= 25 :
             state = 2
 
     elif state == 2 :
-        if len(kanban_opp.inp) >= 21 :
+        if len(kanban_opp.inp) >= 26 :
             state = 1
 
     return state
@@ -1061,8 +1077,8 @@ if __name__ == '__main__':
 
         if TURN_OPP_SILENCE != 1 :
 
-            if len(kanban_opp.inp) <= 5 :
-                for s1,_ in kanban_opp.inp :
+            if len(kanban_opp.inp) <= 20 :
+                for s1,stalk1 in kanban_opp.inp :
                     print(s1,file=sys.stderr)
 
             if game_board[MY_ID].mine == 0 :
@@ -1096,11 +1112,13 @@ if __name__ == '__main__':
                 index = next(i for i, j in enumerate(nb_sector) if j == m)
                 PREVIOUS_SONAR = index
                 game_board[MY_ID].write_sonar(index)
-
+                
 
         if TURN_OPP_SILENCE == 5 :
+            print("START silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
             kanban_opp.silence_fusion()
             kanban_opp = StalkAndTorpedo(kanban_opp)
+            print("END silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
 
         state = update_state(state,turn,game_board[MY_ID],kanban_opp)
         text = update_agent(state,game_board[MY_ID])
