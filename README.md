@@ -39,7 +39,7 @@
 
 **Add Geolocalisation**
 
-- [ ] Improve stalking
+- [x] Improve stalking
 - [ ] Add sonar, in the strategy to counter silence command
 - [ ] Check life of the opponent to determine position
 
@@ -47,7 +47,7 @@
 
 - [x] Test simplification
 - [x] Simplify the map
-- [ ] Improve movement
+- [x] Improve movement
 
 **Implement strategy**
 

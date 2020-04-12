@@ -5,7 +5,7 @@ import random
 import time
 import gc
 
-TURN_OPP_SILENCE = 0
+TURN_OPP_SILENCE = -1
 AGENT_TORPEDO = 0   # 3,2,1,0
 #AGENT_SONAR = 1
 AGENT_MINE = 2
@@ -22,7 +22,7 @@ STATE_MOVE=[
 [ 'SONAR' , 'SILENCE' , 'TORPEDO' , 'MINE' ],
 [ 'TORPEDO' , 'MINE' , 'SILENCE' , 'SONAR' ]
 ]
-
+PREVIOUS_SONAR = 0
 
 WIDTH, HEIGHT, MY_ID, OPP_ID = 0 , 0, 0, 0
 TREASURE_MAP = []
@@ -53,6 +53,7 @@ SECTOR_TRANSIT = {
 5: (6,8,4,2),6: (3,9),8: (9,7),4: (7,1),2: (1,3)
 }
 
+SILENCE_NEED_FUSION = 0
 
 def read_map():
     global WIDTH, HEIGHT, MY_ID, OPP_ID
@@ -68,9 +69,9 @@ def t_check_map(TREASURE_MAP):
 
 DEEP = 11
 DEEP_SILENCE = 14 #26
-DEEP_SILENCE2 = 21
+DEEP_SILENCE2 = 31
 SEARCH_OPP_TORPEDO = 20
-SEARCH_OPP_TRIGGER = 5
+SEARCH_OPP_TRIGGER = 10
 
 class Node:
 
@@ -519,7 +520,9 @@ class StalkAndLegal():
     def __init__(self,clone):
         self.legal = set()
         if clone is not None:
-            self.legal = copy.deepcopy(clone.legal)
+            #self.legal = copy.deepcopy(clone.legal)
+            self.legal = copy.copy(clone.legal)
+
 
     def __str__(self):
         text = ''
@@ -621,7 +624,7 @@ class StalkAndTorpedo():
 
     def read_surface2(self,data):
         for board, stalk in self.inp:
-            if data == sector(board):
+            if int(data[0]) == sector(board):
                 board.treasure_map = copy.deepcopy(TREASURE_MAP)
                 stalk.read_surface(board)
                 self.out.add( (board,stalk) )
@@ -658,6 +661,7 @@ class StalkAndTorpedo():
                             break
 
     def read_silence2(self,data):
+        global SILENCE_NEED_FUSION
         inp = self.inp
         out_add = self.out.add
         if len(self.inp) >= DEEP_SILENCE2:
@@ -666,6 +670,7 @@ class StalkAndTorpedo():
             self.out = self.inp
 
         else :
+            SILENCE_NEED_FUSION = 1
             for board, stalk in inp:
                 out_add( (board, stalk))
 
@@ -675,6 +680,41 @@ class StalkAndTorpedo():
                     board1.y += y_drow
                     board1.x += x_dcol
                     out_add( (board1,stalk1) )
+
+    def silence_fusion(self):
+        inp = self.inp
+        dico_coord = {}
+        out_add = self.out.add
+        for board, stalk in inp:
+            k_coord = board.y , board.x
+            if k_coord in dico_coord :
+                dico_coord[k_coord].append( (board, stalk) )
+            else:
+                dico_coord[k_coord] = [ (board,stalk) ]
+
+        for k_coord, d1 in dico_coord.items():
+            board, stalk = None, None
+            for board1,stalk1 in d1:
+                if board == None:
+                    board = board1
+                    stalk = stalk1
+                stalk.legal.union(stalk1.legal)
+            out_add( (board,stalk) )
+
+    def update_sonar(self,sonar_result,previous):
+        if sonar_result == 'Y':
+            for board, stalk in self.inp:
+                if previous == sector(board):
+                    board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                    stalk.read_surface(board)
+                    self.out.add( (board,stalk) )
+        else:
+            for board, stalk in self.inp:
+                if previous != sector(board):
+                    board.treasure_map = copy.deepcopy(TREASURE_MAP)
+                    stalk.read_surface(board)
+                    self.out.add( (board,stalk) )
+
 
 
 READ_COMMAND = [
@@ -762,6 +802,11 @@ class Submarine():
         t = f'TRIGGER {x} {y}'
         self.out = t if self.out == '' else f'{self.out} | {t}'
 
+    def write_sonar(self,sector):
+        t = f'SONAR {sector}'
+        self.out = t if self.out == '' else f'{self.out} | {t}'
+
+
     # TODO -->
     def read_move(self,direction):
         # IF OKAY
@@ -795,6 +840,8 @@ class Board(Submarine):
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
 
+    def __str__(self):
+        return '({},{})'.format(self.x,self.y)
 
 
 def update(me,opp):
@@ -990,40 +1037,70 @@ if __name__ == '__main__':
 
         sonar_result = input()
         print(sonar_result, file=sys.stderr)
+        if PREVIOUS_SONAR != 0 :
+            kanban_opp.update_sonar(sonar_result,PREVIOUS_SONAR)
+            kanban_opp = StalkAndTorpedo(kanban_opp)
+            PREVIOUS_SONAR = 0
+
         opponent_orders = input()
 
         for c1, f1, d1 in update_order(opponent_orders):
+            if c1 == 'SILENCE':
+                TURN_OPP_SILENCE = 0
+
             if f1 is not None:
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
-            if c1 == 'SILENCE':
-                TURN_OPP_SILENCE = 0
+
+        TURN_OPP_SILENCE = TURN_OPP_SILENCE + 1 if TURN_OPP_SILENCE != -1 else TURN_OPP_SILENCE
 
         print("Kanban Board {} Torpedo {}".format(
         len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
 
-        if game_board[MY_ID].mine == 0 :
+        print("Need Fusion {} Turn Opp Silence {}".format(SILENCE_NEED_FUSION, TURN_OPP_SILENCE),file=sys.stderr)
 
-            orientation = kanban_mine.mine(game_board[MY_ID])
-            if orientation is not None :
-                game_board[MY_ID].write_mine(orientation)
-                game_board[MY_ID].mine = 3
+        if TURN_OPP_SILENCE != 1 :
 
-        if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
-            for s1,_ in kanban_opp.inp :
-                distance = manhattan(s1,game_board[MY_ID])
-                if  distance >= 2 and distance <= 4 :
-                    game_board[MY_ID].write_torpedo(s1.x,s1.y)
-                    game_board[MY_ID].torpedo = 3
-                    break
+            if len(kanban_opp.inp) <= 5 :
+                for s1,_ in kanban_opp.inp :
+                    print(s1,file=sys.stderr)
 
-        if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
-            for s1,_ in kanban_opp.inp :
-                mine = kanban_mine.nearby(game_board[MY_ID],s1)
-                if mine is not None:
-                    kanban_mine.trigger(mine)
-                    game_board[MY_ID].write_trigger(mine.x,mine.y)
-                    break
+            if game_board[MY_ID].mine == 0 :
+
+                orientation = kanban_mine.mine(game_board[MY_ID])
+                if orientation is not None :
+                    game_board[MY_ID].write_mine(orientation)
+                    game_board[MY_ID].mine = 3
+
+            if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
+                for s1,_ in kanban_opp.inp :
+                    distance = manhattan(s1,game_board[MY_ID])
+                    if  distance >= 2 and distance <= 4 :
+                        game_board[MY_ID].write_torpedo(s1.x,s1.y)
+                        game_board[MY_ID].torpedo = 3
+                        break
+
+            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
+                for s1,_ in kanban_opp.inp :
+                    mine = kanban_mine.nearby(game_board[MY_ID],s1)
+                    if mine is not None:
+                        kanban_mine.trigger(mine)
+                        game_board[MY_ID].write_trigger(mine.x,mine.y)
+                        break
+
+            if len(kanban_opp.inp) >= DEEP_SILENCE2 and game_board[MY_ID].sonar == 0:
+                nb_sector = [ 0 ] * 10
+                for s1,_ in kanban_opp.inp :
+                    nb_sector[sector(s1)] += 1
+                m = max(nb_sector)
+                index = next(i for i, j in enumerate(nb_sector) if j == m)
+                PREVIOUS_SONAR = index
+                game_board[MY_ID].write_sonar(index)
+
+
+        if TURN_OPP_SILENCE == 5 :
+            kanban_opp.silence_fusion()
+            kanban_opp = StalkAndTorpedo(kanban_opp)
 
         state = update_state(state,turn,game_board[MY_ID],kanban_opp)
         text = update_agent(state,game_board[MY_ID])
