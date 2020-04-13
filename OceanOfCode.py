@@ -71,7 +71,9 @@ DEEP = 11
 DEEP_SILENCE = 14 #26
 DEEP_SILENCE2 = 31
 SEARCH_OPP_TORPEDO = 7
+SEARCH_OPP_TORPEDO_MIN = 3
 SEARCH_OPP_TRIGGER = 7
+SEARCH_OPP_TRIGERR_LOTS = 15
 
 class Node:
 
@@ -493,8 +495,10 @@ class MineAndTrigger():
     def mine(self,board):
         dirs = [iter(DIRS)]
         orientation, y_drow, x_dcol = '', 0, 0
+
         for orientation, y_drow, x_dcol in dirs[-1]:
             new_coord = board.y + y_drow, board.x + x_dcol
+
             if new_coord in self.legal:
                 self.legal.remove(new_coord)
                 mine = Point(board.x + x_dcol,board.y + y_drow)
@@ -936,9 +940,9 @@ BOARD_OBSERVER_TORPEDO = (
 (-4,0),
 (-3,-1),(-3,0),(-3,1),
 (-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
-(-1,-3),(-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),(-1,3),
-(0,-4),(0,-3),(0,-2),(0,-1),(0,0),(0,1),(0,2),(0,3),(0,4),
-(1,-3),(1,-2),(1,-1),(1,0),(1,1),(1,2),(1,3),
+(-1,-3),(-1,-2),(-1,2),(-1,3),
+(0,-4),(0,-3),(0,-2),(0,2),(0,3),(0,4),
+(1,-3),(1,-2),(1,2),(1,3),
 (2,-2),(2,-1),(2,0),(2,1),(2,2),
 (3,-1),(3,0),(3,1),
 (4,0)
@@ -1077,7 +1081,10 @@ class TriggerObserver():
         return True
 
     def notify_else(self,submarine,kanban_mine,kanban_opp):
-        mine = max(self.dict_mine, key = self.dict_mine.get)
+        mine = max(self.dict_mine, key = self.dict_mine.get,default=None)
+
+        if mine == None :
+            return False
 
         if self.dict_mine[mine] > 0 :
             submarine.write_trigger(mine.x,mine.y)
@@ -1174,9 +1181,12 @@ class ObserverQueue():
             for instance in self.observer:
                 success = instance.notify_iter(submarine,kanban_mine,k_board_opp,k_stalk_opp)
 
+        success = False
 
         for instance in self.observer:
+
             success = instance.notify_else(submarine,kanban_mine,kanban_opp)
+
             if success == False :
                 self.detach(instance)
 
@@ -1295,7 +1305,7 @@ if __name__ == '__main__':
 
         for i1 in range(2):
 
-            if i1 == 0 and TURN_MY_SILENCE < 7 :
+            if i1 == 0 and TURN_MY_SILENCE < 8 :
                 continue
 
             if i1 == 0 and game_board[MY_ID].silence != 0:
@@ -1357,7 +1367,7 @@ if __name__ == '__main__':
         if "TRIGGER" in opponent_orders:
             # TODO: Can be improved
             _observer.nb_observer_check += 1
-        print("Before UPDATE Lost Life {} Nb Observer ".format(
+        print("Before UPDATE Lost Life {} Nb Observer {}".format(
         _observer.lost_life,_observer.nb_observer_check),file=sys.stderr)
 
         kanban_opp = _observer.update(game_board[MY_ID],kanban_opp,kanban_mine)
@@ -1378,13 +1388,24 @@ if __name__ == '__main__':
 
         print("Need Fusion {} Turn Opp Silence {}".format(SILENCE_NEED_FUSION, TURN_OPP_SILENCE),file=sys.stderr)
 
+        is_torpedo_attach = False
         if TURN_OPP_SILENCE != 1 :
 
-            if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
+            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 1 :
+                _observer.attach(trigger_obs)
+
+            elif len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
+                print("TORPEDO SEARCH FIND",file=sys.stderr)
+                is_torpedo_attach = True
                 _observer.attach(torpedo_obs)
 
-            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
+            elif len(kanban_mine.minefield) > SEARCH_OPP_TRIGERR_LOTS :
                 _observer.attach(trigger_obs)
+
+            if is_torpedo_attach == False:
+                if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO_MIN and game_board[MY_ID].torpedo == 0:
+                    print("TORPEDO FIND",file=sys.stderr)
+                    _observer.attach(torpedo_obs)
 
             _observer.iterator(game_board[MY_ID],kanban_opp,kanban_mine)
 

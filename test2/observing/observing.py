@@ -12,6 +12,7 @@ from OceanOfCode import Submarine
 from OceanOfCode import Board
 
 from OceanOfCode import TorpedoObserver
+from OceanOfCode import TriggerObserver
 from OceanOfCode import ObserverQueue
 
 # Global
@@ -43,11 +44,18 @@ class _observing(unittest.TestCase):
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
+        for t_r in MINE_MAP:
+            print(t_r)
+
+
         kanban_mine = MineAndTrigger(None)
         lambda_n = lambda t1, m1 : '.' if t1 == '.' and m1 == '.' else ' '
         for i1 in range(15):
             MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
         kanban_mine.set_up(MINE_MAP)
+
+        for t_r in MINE_MAP:
+            print(t_r)
 
         submarine_mine = Board(None)
         submarine_mine.y = 7
@@ -110,6 +118,11 @@ class _observing(unittest.TestCase):
             MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
         kanban_mine.set_up(MINE_MAP)
 
+        print()
+
+        for t_r in MINE_MAP:
+            print(t_r)
+
         submarine_mine = Board(None)
         submarine_mine.y = 7
         submarine_mine.x = 7
@@ -124,7 +137,7 @@ class _observing(unittest.TestCase):
         kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
-        kanban_mine.mine(submarine)
+        kanban_mine.mine(submarine_mine)
 
         _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
 
@@ -135,28 +148,56 @@ class _observing(unittest.TestCase):
 
         submarine_mine.x = 12
         submarine_mine.y = 12
-        kanban_mine.mine(submarine)
+        kanban_mine.mine(submarine_mine)
 
         _observer.attach(trigger_obs)
 
         _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
 
-        print("Observer Torpedo {}".format(torpedo_obs))
-        print("Submarine torpedo {}".format(submarine_mine.torpedo))
+        print("Observer Torpedo {}".format(trigger_obs))
         print("Length {}".format(len(kanban_opp.inp)))
 
         kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
+        submarine_mine.x = 11
+        submarine_mine.y = 2
+        kanban_mine.mine(submarine_mine)
+
         _observer.attach(trigger_obs)
 
         _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
 
-        print("Observer Torpedo {}".format(torpedo_obs))
-        print("Submarine torpedo {}".format(submarine_mine.torpedo))
+        print("Observer Torpedo {}".format(trigger_obs))
         print("Length {}".format(len(kanban_opp.inp)))
 
+        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        _observer.reset()
 
+        submarine_mine.x = 3
+        submarine_mine.y = 4
+        kanban_mine.mine(submarine_mine)
+
+        _observer.attach(trigger_obs)
+
+        _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
+
+        print("Observer Torpedo {}".format(trigger_obs))
+        print("Length {}".format(len(kanban_opp.inp)))
+
+        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        _observer.reset()
+
+        submarine_mine.x = 7
+        submarine_mine.y = 8
+        kanban_mine.mine(submarine_mine)
+
+        _observer.attach(trigger_obs)
+
+        _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
+
+        print("Observer Torpedo {}".format(trigger_obs))
+        print("Length {}".format(len(kanban_opp.inp)))
 
 if __name__ == '__main__':
     unittest.main()
