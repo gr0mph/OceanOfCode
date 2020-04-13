@@ -1047,6 +1047,104 @@ class TorpedoObserver():
                 return True
         return False
 
+def square2(mine,my_board,opp_board):
+    result = True if square(mine,my_board) == False and square(mine,opp_board) == True else False
+    return result
+
+class TriggerObserver():
+
+    def __init__(self,clone):
+        #
+        self.dict_mine = {}
+        self.trigger = (-1,-1)
+
+    def __str__(self):
+        y, x = self.trigger
+        return f'Trigger Obs: ({y},{x})'
+
+    def reset(self):
+        self.dict_mine = {}
+        self.trigger = (-1,-1)
+
+    def notify_iter(self,submarine,kanban_mine,k_board_opp,k_stalk_opp):
+        # TODO
+        list_mine = [mine for mine in kanban_mine.minefield if square2(mine,submarine,k_board_opp)]
+        for m1 in list_mine:
+            if m1 in self.dict_mine:
+                self.dict_mine[m1] += 1
+            else :
+                self.dict_mine[m1] = 1
+        return True
+
+    def notify_else(self,submarine,kanban_mine,kanban_opp):
+        mine = max(self.dict_mine, key = self.dict_mine.get)
+
+        if self.dict_mine[mine] > 0 :
+            submarine.write_trigger(mine.x,mine.y)
+            submarine.mine = 3
+            kanban_mine.trigger(mine)
+            self.trigger = (mine.y,mine.x)
+            return True
+
+        else :
+            return False
+
+    def notify_check(self,submarine,kanban_mine,kanban_opp):
+        k_coord = self.trigger
+        y_torpedo, x_torpedo = k_coord
+        print("torpedo_check lost life {} nb observer check {}".format(
+        self.lost_life,self.nb_observer_check),file=sys.stderr)
+
+        if self.lost_life == 0:
+            all_set = set()
+            all_set.add(k_coord)
+            for y_drow, x_dcol in OBSERVER_TORPEDO:
+                y_diff_drow,x_diff_dcol = y_torpedo + y_drow, x_torpedo + x_dcol
+                all_set.add( (y_diff_drow,x_diff_dcol) )
+
+            for board,stalk in kanban_opp.inp:
+                board_coord = board.y, board.x
+                if board_coord not in all_set:
+                    kanban_opp.out.add( (board,stalk) )
+
+            return True
+
+        elif self.nb_observer_check == 1 :
+
+            if self.lost_life == 1:
+                all_set = set()
+                for y_drow, x_dcol in OBSERVER_TORPEDO:
+                    y_diff_drow,x_diff_dcol = y_torpedo + y_drow, x_torpedo + x_dcol
+                    all_set.add( (y_diff_drow,x_diff_dcol) )
+
+                for board,stalk in kanban_opp.inp:
+                    board_coord = board.y, board.x
+                    if board_coord in all_set:
+                        print("torpedo check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        kanban_opp.out.add( (board,stalk) )
+                    else:
+                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+
+
+                return True
+
+            elif self.lost_life == 2:
+                all_set = set()
+                all_set.add(k_coord)
+                print(k_coord,file=sys.stderr)
+
+                for board,stalk in kanban_opp.inp:
+                    board_coord = board.y, board.x
+                    if board_coord in all_set:
+                        print("torpedo check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        kanban_opp.out.add( (board,stalk) )
+                    else:
+                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+
+                return True
+        return False
+
+
 class ObserverQueue():
 
     def __init__(self,clone):
@@ -1179,6 +1277,7 @@ if __name__ == '__main__':
 
     # From TI observing
     torpedo_obs = TorpedoObserver(None)
+    trigger_obs = TriggerObserver(None)
     _observer = ObserverQueue(None)
     # End from TI observing
 
@@ -1284,6 +1383,9 @@ if __name__ == '__main__':
             if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
                 _observer.attach(torpedo_obs)
 
+            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
+                _observer.attach(trigger_obs)
+
             _observer.iterator(game_board[MY_ID],kanban_opp,kanban_mine)
 
 
@@ -1308,13 +1410,13 @@ if __name__ == '__main__':
             #            game_board[MY_ID].torpedo = 3
             #            break
 
-            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
-                for s1,_ in kanban_opp.inp :
-                    mine = kanban_mine.nearby(game_board[MY_ID],s1)
-                    if mine is not None:
-                        kanban_mine.trigger(mine)
-                        game_board[MY_ID].write_trigger(mine.x,mine.y)
-                        break
+            # if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
+            #     for s1,_ in kanban_opp.inp :
+            #         mine = kanban_mine.nearby(game_board[MY_ID],s1)
+            #         if mine is not None:
+            #             kanban_mine.trigger(mine)
+            #             game_board[MY_ID].write_trigger(mine.x,mine.y)
+            #             break
 
             if len(kanban_opp.inp) >= DEEP_SILENCE2 and game_board[MY_ID].sonar == 0:
                 nb_sector = [ 0 ] * 10

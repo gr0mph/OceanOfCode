@@ -29,7 +29,7 @@ h_command = { ('MOVE')}
 
 class _observing(unittest.TestCase):
 
-    def test_usual_case(self):
+    def _usual_case(self):
         # The map
         for t_r in TREASURE_MAP:
             print(t_r)
@@ -89,6 +89,73 @@ class _observing(unittest.TestCase):
         print("Observer Torpedo {}".format(torpedo_obs))
         print("Submarine torpedo {}".format(submarine_mine.torpedo))
         print("Length {}".format(len(kanban_opp.inp)))
+
+    def test_usual_case2(self):
+        # The map
+        for t_r in TREASURE_MAP:
+            print(t_r)
+
+        # Initialize
+        kanban_opp = StalkAndTorpedo(None)
+        kanban_opp.set_up(TREASURE_MAP)
+
+        for c1, f1, d1 in update_order('MOVE N|MOVE N'):
+            if f1 is not None:
+                kanban_opp.update(f1,d1)
+                kanban_opp = StalkAndTorpedo(kanban_opp)
+
+        kanban_mine = MineAndTrigger(None)
+        lambda_n = lambda t1, m1 : '.' if t1 == '.' and m1 == '.' else ' '
+        for i1 in range(15):
+            MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
+        kanban_mine.set_up(MINE_MAP)
+
+        submarine_mine = Board(None)
+        submarine_mine.y = 7
+        submarine_mine.x = 7
+
+        # Serious thing
+        trigger_obs = TriggerObserver(None)
+
+        _observer = ObserverQueue(None)
+
+        # TURN 1
+
+        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        _observer.reset()
+
+        kanban_mine.mine(submarine)
+
+        _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
+
+        # TURN 2
+
+        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        _observer.reset()
+
+        submarine_mine.x = 12
+        submarine_mine.y = 12
+        kanban_mine.mine(submarine)
+
+        _observer.attach(trigger_obs)
+
+        _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
+
+        print("Observer Torpedo {}".format(torpedo_obs))
+        print("Submarine torpedo {}".format(submarine_mine.torpedo))
+        print("Length {}".format(len(kanban_opp.inp)))
+
+        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        _observer.reset()
+
+        _observer.attach(trigger_obs)
+
+        _observer.iterator(submarine_mine,kanban_opp,kanban_mine)
+
+        print("Observer Torpedo {}".format(torpedo_obs))
+        print("Submarine torpedo {}".format(submarine_mine.torpedo))
+        print("Length {}".format(len(kanban_opp.inp)))
+
 
 
 if __name__ == '__main__':

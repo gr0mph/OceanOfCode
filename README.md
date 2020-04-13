@@ -41,7 +41,9 @@
 
 - [x] Improve stalking
 - [x] Add sonar, in the strategy to counter silence command
-- [ ] Check life of the opponent to determine position (***in progress***)
+- [ ] Check life of the opponent to determine position
+- [x] Torpedo
+- [ ] Trigger
 
 **Improve Treasure map**
 
