@@ -320,19 +320,23 @@ class PathSolving:
         save_type = 0
         for type, path in self.solve(next_sector):
             if type == k_PATH_HAMILTON :
-                save_type = type, save = path
+                save_type = type
+                save = path
                 break
 
             if type == k_PATH_MAX :
                 max_find = True
-                save_type = type, save = copy.copy(path)
+                save_type = type
+                save = copy.copy(path)
 
             if max_find == False and type == k_PATH_FIRST :
                 first_find = True
-                save_type = type, save = copy.copy(path)  # This data is ephemerate
+                save_type = type
+                save = copy.copy(path)  # This data is ephemerate
 
             if max_find == False and first_find == False and type == k_PATH_LAST :
-                save_type = type, save = copy.copy(path)  # This data is ephemerate
+                save_type = type
+                save = copy.copy(path)  # This data is ephemerate
 
         return save_type, save
 
@@ -887,6 +891,7 @@ class Board(Submarine):
             self.x, self.y, self.life = clone.x, clone.y, clone.life
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
+        self.need_surface = False
 
     def __str__(self):
         return '({},{})'.format(self.x,self.y)
@@ -1260,7 +1265,6 @@ class Planning():
             distance = self.index
             self.is_forward = True
 
-        print(self.index)
         return (distance, self.forward[self.index])
 
     @property
@@ -1292,12 +1296,14 @@ class StrategyStarting():
 
         kanban_path.update_sector()
 
-        print(self.previous_sector)
         coord, kanban_path.last = next(iter(kanban_path.sector[self.previous_sector].items()))
         del kanban_path.sector[5][coord]
 
         path_reducing = []
         path_reducing.append(kanban_path.last)
+
+        for i in range(9):
+            path_reducing = self.path(kanban_path,path_reducing)
 
         return path_reducing
 
@@ -1339,8 +1345,8 @@ class StrategyStarting():
     def movement(self, submarine, kanban_path, planning):
         self.turn += 1
 
-        if self.turn < 10 :
-            planning.forward = self.path(kanban_path,planning.forward)
+        #if self.turn < 10 :
+        #    planning.forward = self.path(kanban_path,planning.forward)
 
         if submarine.silence == 0 :
             distance, p1_next = planning.__next__()
@@ -1355,7 +1361,8 @@ class StrategyStarting():
         else :
             distance, p1_next = planning.__next__()
             if distance == 0 :
-                submarine.write_surface()
+                submarine.need_surface = True
+                #submarine.write_surface()
             return (False, p1_next)
 
 class StrategyDiscrete():
@@ -1372,7 +1379,8 @@ class StrategyDiscrete():
             distance, p1_next = planning.__next__()
             if distance < 5 :
                 planning.is_forward = False if planning.is_forward else True
-                submarine.write_surface()
+                submarine.need_surface = True
+                #submarine.write_surface()
 
             y_row, x_col = p1_next.y, p1_next.x
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
@@ -1385,7 +1393,8 @@ class StrategyDiscrete():
         else :
             distance, p1_next = planning.__next__()
             if distance == 0 :
-                submarine.write_surface()
+                submarine.need_surface = True
+                #submarine.write_surface()
             return (False, p1_next)
 
 class StrategySearching():
@@ -1400,7 +1409,9 @@ class StrategySearching():
 
         distance, p1_next = planning.__next__()
         if distance == 0 :
-            submarine.write_surface()
+            #submarine.write_surface()
+            submarine.need_surface = True
+
         return (False, p1_next)
 
 class StrategyMining():
@@ -1416,7 +1427,9 @@ class StrategyMining():
             distance, p1_next = planning.__next__()
             if distance < 5 :
                 planning.is_forward = False if planning.is_forward else True
-                submarine.write_surface()
+                #submarine.write_surface()
+                submarine.need_surface = True
+
 
             y_row, x_col = p1_next.y, p1_next.x
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
@@ -1429,7 +1442,9 @@ class StrategyMining():
         else :
             distance, p1_next = planning.__next__()
             if distance == 0 :
-                submarine.write_surface()
+                #submarine.write_surface()
+                submarine.need_surface = True
+
             return (False, p1_next)
 
 class StrategyWaring():
@@ -1445,7 +1460,8 @@ class StrategyWaring():
             distance, p1_next = planning.__next__()
             if distance < 5 :
                 planning.is_forward = False if planning.is_forward else True
-                submarine.write_surface()
+                #submarine.write_surface()
+                submarine.need_surface = True
 
             y_row, x_col = p1_next.y, p1_next.x
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
@@ -1458,7 +1474,9 @@ class StrategyWaring():
         else :
             distance, p1_next = planning.__next__()
             if distance == 0 :
-                submarine.write_surface()
+                #submarine.write_surface()
+                submarine.need_surface = True
+
             return (False, p1_next)
 
 
@@ -1734,8 +1752,9 @@ if __name__ == '__main__':
         dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
         game_board[MY_ID].write_move(dir,text)
 
-        if need_surface == 1:
+        if game_board[MY_ID].need_surface == True:
             game_board[MY_ID].write_surface()
+            game_board[MY_ID].need_surface = False
         # End From TI reducing work
 
         turn += 1
