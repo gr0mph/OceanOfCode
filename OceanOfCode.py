@@ -6,21 +6,23 @@ import time
 import gc
 
 TURN_OPP_SILENCE = -1
-AGENT_TORPEDO = 0   # 3,2,1,0
-#AGENT_SONAR = 1
-AGENT_MINE = 2
-AGENT_SILENCE = 1
 
 game_board = [ None , None ]
 movement_f = { 'N': None,'S': None,'E': None,'W': None }
-#select_a = [ 'TORPEDO' , 'MINE' , 'SILENCE' ]
-select_a = [ 'TORPEDO' , 'SILENCE' , 'MINE' ]
 
 state = 0
+k_STATE_AGENT_STARTING = 0
+k_STATE_AGENT_DISCRETE = 1
+k_STATE_AGENT_SEARCHING = 2
+k_STATE_AGENT_MINING = 3
+k_STATE_AGENT_WARING = 4
+
 STATE_MOVE=[
-[ 'TORPEDO' , 'SILENCE' , 'MINE' , 'SONAR' ],
-[ 'SILENCE' , 'MINE' , 'TORPEDO' , 'SONAR' ],
-[ 'TORPEDO' , 'MINE' , 'SILENCE' , 'SONAR' ]
+[ 'SILENCE' , 'TORPEDO' , 'MINE' , 'SONAR' ],
+[ 'SILENCE' , 'MINE' , 'SONAR' , 'TORPEDO' ],
+[ 'SONAR' , 'MINE' , 'TORPEDO' , 'SILENCE' ],
+[ 'MINE' , 'TORPEDO' , 'SILENCE' , 'SONAR' ],
+[ 'TORPEDO' , 'MINE' , 'SILENCE' , 'SONAR' ],
 ]
 PREVIOUS_SONAR = 0
 
@@ -1278,6 +1280,7 @@ class StrategyStarting():
         self.previous_sector_a, self.previous_sector_b = 0, 0
         self.iter_sector_reducing, self.sector_next = None, -1
         self.turn = 0
+        self.agent = k_STATE_AGENT_STARTING
         pass
 
     def set_up(self,kanban_path,TREASURE_MAP):
@@ -1360,7 +1363,9 @@ class StrategyStarting():
 
         else :
             distance, p1_next = planning.__next__()
+            print(distance,file=sys.stderr)
             if distance == 0 :
+                print("NEED SURFACE",file=sys.stderr)
                 submarine.need_surface = True
                 #submarine.write_surface()
             return (False, p1_next)
@@ -1369,6 +1374,8 @@ class StrategyDiscrete():
 
     def __init__(self,clone):
         self.turn = 0
+        self.agent = k_STATE_AGENT_DISCRETE
+
         if clone is not None :
             self.turn = clone.turn
 
@@ -1401,6 +1408,8 @@ class StrategySearching():
 
     def __init__(self,clone):
         self.turn = 0
+        self.agent = k_STATE_AGENT_SEARCHING
+
         if clone is not None :
             self.turn = clone.turn
 
@@ -1418,6 +1427,7 @@ class StrategyMining():
 
     def __init__(self, clone):
         self.turn = 0
+        self.agent = k_STATE_AGENT_MINING
         if clone is not None :
             self.turn = clone.turn
 
@@ -1451,6 +1461,7 @@ class StrategyWaring():
 
     def __init__(self, clone):
         self.turn = 0
+        self.agent = k_STATE_AGENT_WARING
         if clone is not None :
             self.turn = clone.turn
 
@@ -1745,16 +1756,20 @@ if __name__ == '__main__':
             print("END silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
 
         state = update_state(state,turn,game_board[MY_ID],kanban_opp)
-        text = update_agent(state,game_board[MY_ID])
+        text = update_agent(g_strategy_state.agent,game_board[MY_ID])
 
         # From TI reducing work
+        # Regression has been inserted
         y_row, x_col = p1_next.y, p1_next.x
         dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
         game_board[MY_ID].write_move(dir,text)
 
         if game_board[MY_ID].need_surface == True:
+            print("ORDER NEED SURFACE",file=sys.stderr)
             game_board[MY_ID].write_surface()
             game_board[MY_ID].need_surface = False
+
+
         # End From TI reducing work
 
         turn += 1
