@@ -37,9 +37,9 @@ GET_DIRS = { (-1,0) : 'N' , (1,0) : 'S' , (0,1) : 'E' , (0,-1) : 'W' }
 OPP_DIRS = { 'N' : ('S',1, 0) , 'S' : ('N',-1, 0) , 'E' : ('W',0, -1) , 'W' : ('E',0, 1) }
 OPPONENT_SET = set()
 
-HAMILTON = 1
-FIRST = 2
-LAST = 3
+k_PATH_HAMILTON = 1
+k_PATH_FIRST = 2
+k_PATH_LAST = 3
 
 # TODO: Can be improved
 SECTOR_REDUCING = {
@@ -313,13 +313,13 @@ class PathSolving:
     def solve_sector(self,next_sector):
         save = []
         for type, path in self.solve(next_sector):
-            if len(save) ==  0 and type == FIRST:
+            if len(save) ==  0 and type == k_PATH_FIRST:
                 #save = copy.deepcopy(path)  # This data is ephemerate
                 save = copy.copy(path)  # This data is ephemerate
-            elif len(save) == 0 and type == LAST:
+            elif len(save) == 0 and type == k_PATH_LAST:
                 #save = copy.deepcopy(path)  # This data is ephemerate
                 save = copy.copy(path)  # This data is ephemerate
-            elif type == HAMILTON :
+            elif type == k_PATH_HAMILTON :
                 save = path
         return save
 
@@ -365,7 +365,7 @@ class PathSolving:
                     del self.sector[sector_start][new_coord]
 
                     if len(self.sector[sector_start]) == 0 :
-                        yield (LAST,path)
+                        yield (k_PATH_LAST,path)
 
                     iter_dir_append(iter(n1.possible_dir))
                     # Recompute fucking iter
@@ -376,13 +376,13 @@ class PathSolving:
                         y_row, x_col = new_coord
                         n1 = self.sector[k_end][new_coord]
                         path_append(n1)
-                        yield (HAMILTON, path)
+                        yield (k_PATH_HAMILTON, path)
                         return
 
                     if new_coord in self.sector[k_end] and first == 0:
                         first = 1
                         path_append(self.sector[k_end][new_coord])
-                        yield (FIRST, path)
+                        yield (k_PATH_FIRST, path)
                         path_pop()
 
             else:

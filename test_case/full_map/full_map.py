@@ -16,9 +16,9 @@ from OceanOfCode import PathSolving
 from OceanOfCode import HEIGHT
 from OceanOfCode import EMPTY_SYMBOLS
 from OceanOfCode import DIRS
-from OceanOfCode import HAMILTON
-from OceanOfCode import FIRST
-from OceanOfCode import LAST
+#from OceanOfCode import k_PATH_HAMILTON
+#from OceanOfCode import k_PATH_FIRST
+#from OceanOfCode import k_PATH_LAST
 from OceanOfCode import SECTOR_REDUCING
 from OceanOfCode import SECTOR_TRANSIT
 
@@ -91,6 +91,7 @@ class StrategyStarting():
         return path_reducing
 
 
+
 class _reducing(unittest.TestCase):
 
     def _global(self):
@@ -111,14 +112,21 @@ class _reducing(unittest.TestCase):
         p1_forward = next(iter_forward)
         p1_backward = next(iter_backward)
 
-        print("TURN 0 : print ({},{})".format(p1_forward.x,p1_forward.y))
+        i1 = 0
+        print("TURN {} : print ({},{})".format(i1,p1_forward.x,p1_forward.y))
 
-        for i in range(9):
+        for i1 in range(1,10):
                 path_reducing = g_strategy_state.path(kanban_path,path_reducing)
 
                 p1_forward = next(iter_forward)
 
-                print("TURN {} : move ({},{})".format(i+1,p1_forward.x,p1_forward.y))
+                print("TURN {} : move ({},{})".format(i1,p1_forward.x,p1_forward.y))
+
+                path_reducing = g_strategy_state.path(kanban_path,path_reducing)
+
+        i1 += 1
+        p1_forward = next(iter_forward)
+        print("TURN {} : move ({},{})".format(i1,p1_forward.x,p1_forward.y))
 
 
 
