@@ -19,6 +19,7 @@ from OceanOfCode import HAMILTON
 from OceanOfCode import FIRST
 from OceanOfCode import LAST
 from OceanOfCode import SECTOR_REDUCING
+from OceanOfCode import SECTOR_TRANSIT
 
 # Function
 from OceanOfCode import sector
@@ -150,33 +151,53 @@ class _reducing(unittest.TestCase):
         print(result[-1])
 
     def test_last(self):
+        global SECTOR_TRANSIT
         me = PathSolving(None)
         me.set_up(TREASURE_MAP)
         me.update()
         me.update_sector()
 
         # First node
+        previous_sector = 5
+        previous_sector_a, previous_sector_b = 0,0
         coord, me.last = next(iter(me.sector[5].items()))
         del me.sector[5][coord]
 
-        path_solving = []
-        iter_sector_reducing, sector_next = iter(SECTOR_REDUCING), -1
+        path_reducing = []
+        iter_sector_reducing, sector_next = None, -1
 
+        # From true code
+        kanban_path = me
 
         while True:
-            if sector_next != 0 :
-                sector_next = next(iter_sector_reducing)
-                result = me.solve_sector(sector_next)
-                path_solving.extend(result)
-                me.next_sector(path_solving)
-                print(path_solving[-1])
-            else:
+            if sector_next == 0 :
                 break
+
+            elif sector_next == -1:
+                k_next_tuple = SECTOR_TRANSIT[previous_sector]
+                result = kanban_path.solve_sector(k_next_tuple)
+                path_reducing.extend(result[1:])
+                kanban_path.next_sector(path_reducing)
+                if previous_sector_a == 0:
+                    previous_sector = previous_sector_a = sector(path_reducing[-1])
+                else :
+                    previous_sector = previous_sector_b = sector(path_reducing[-1])
+                    t_sector_reducing = (previous_sector_a,previous_sector_b)
+                    iter_sector_reducing = iter(SECTOR_REDUCING[t_sector_reducing])
+                    next(iter_sector_reducing)
+                    sector_next = next(iter_sector_reducing)
+
+            else :
+                sector_next = next(iter_sector_reducing)
+                print("Sector next: {}".format(sector_next),file=sys.stderr)
+                result = kanban_path.solve_sector([sector_next])
+                path_reducing.extend(result[1:])
+                kanban_path.next_sector(path_reducing)
 
         choice = 0
 
-        iter_forward = iter(path_solving)
-        iter_backward = iter(reversed(path_solving))
+        iter_forward = iter(path_reducing)
+        iter_backward = iter(reversed(path_reducing))
 
         p1_forward = next(iter_forward)
         p1_backward = next(iter_backward)
@@ -191,7 +212,7 @@ class _reducing(unittest.TestCase):
 
                 if p1_forward == p1_backward:
                     choice = 1
-                    iter_forward = iter(path_solving)
+                    iter_forward = iter(path_reducing)
                     p1_forward = next(iter_forward)
                     print()
                     print("NEED SURFACE")
@@ -204,7 +225,7 @@ class _reducing(unittest.TestCase):
 
                 if p1_forward == p1_backward:
                     choice = 0
-                    iter_backward = iter(reversed(path_solving))
+                    iter_backward = iter(reversed(path_reducing))
                     p1_backward = next(iter_backward)
                     print()
                     print("NEED SURFACE")

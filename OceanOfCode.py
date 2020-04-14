@@ -50,7 +50,8 @@ SECTOR_REDUCING = {
 }
 
 SECTOR_TRANSIT = {
-5: (6,8,4,2),6: (3,9),8: (9,7),4: (7,1),2: (1,3)
+5: (6,8,4,2),6: (3,9),8: (9,7),4: (7,1),2: (1,3),
+1: (2,4), 3: (2,6), 7:(4,8), 9:(8,6)
 }
 
 SILENCE_NEED_FUSION = 0
@@ -67,13 +68,14 @@ def t_check_map(TREASURE_MAP):
     for i in range(HEIGHT):
         print(TREASURE_MAP[i],file=sys.stderr)
 
+
 DEEP = 11
 DEEP_SILENCE = 14 #26
 DEEP_SILENCE2 = 31
 SEARCH_OPP_TORPEDO = 7
 SEARCH_OPP_TORPEDO_MIN = 3
 SEARCH_OPP_TRIGGER = 7
-SEARCH_OPP_TRIGERR_LOTS = 15
+SEARCH_OPP_TRIGERR_LOTS = 10
 
 class Node:
 
@@ -1391,7 +1393,7 @@ if __name__ == '__main__':
         is_torpedo_attach = False
         if TURN_OPP_SILENCE != 1 :
 
-            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 1 :
+            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
                 _observer.attach(trigger_obs)
 
             elif len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
@@ -1400,6 +1402,7 @@ if __name__ == '__main__':
                 _observer.attach(torpedo_obs)
 
             elif len(kanban_mine.minefield) > SEARCH_OPP_TRIGERR_LOTS :
+                print("TRIGGER SEARCH IN LOT",file=sys.stderr)
                 _observer.attach(trigger_obs)
 
             if is_torpedo_attach == False:

@@ -41,9 +41,9 @@
 
 - [x] Improve stalking
 - [x] Add sonar, in the strategy to counter silence command
-- [ ] Check life of the opponent to determine position
+- [x] Check life of the opponent to determine position
 - [x] Torpedo
-- [ ] Trigger
+- [x] Trigger
 
 **Improve Treasure map**
 
@@ -53,8 +53,8 @@
 
 **Implement strategy**
 
-- [ ] ***Easy*** Add Observer in last loop (***in progress***)
-- [ ] ***Easy*** Implement Design Pattern strategy
+- [x] ***Easy*** Add Observer in last loop (Done for trigger and torpedo)
+- [ ] ***Easy*** Implement Design Pattern strategy (***In Progress***)
 - [ ] ***Hard*** Implement Deep Q for strategy (what states...)
 
 **Objective**
