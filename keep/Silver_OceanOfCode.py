@@ -315,26 +315,28 @@ class PathSolving:
 
     def solve_sector(self,next_sector):
         save = []
+        hamilton_find = False
         max_find = False
         first_find = False
-        save_type = 0
+
         for type, path in self.solve(next_sector):
             if type == k_PATH_HAMILTON :
-                save_type = type, save = path
+                hamilton_find = True
+                save = path
                 break
 
             if type == k_PATH_MAX :
                 max_find = True
-                save_type = type, save = copy.copy(path)
+                save = copy.copy(path)
 
             if max_find == False and type == k_PATH_FIRST :
                 first_find = True
-                save_type = type, save = copy.copy(path)  # This data is ephemerate
+                save = copy.copy(path)  # This data is ephemerate
 
             if max_find == False and first_find == False and type == k_PATH_LAST :
-                save_type = type, save = copy.copy(path)  # This data is ephemerate
+                save = copy.copy(path)  # This data is ephemerate
 
-        return save_type, save
+        return save
 
     def coord_random(self):
         node = random.choice(list(self.legal))
@@ -1000,7 +1002,11 @@ class TorpedoObserver():
             x_diff = k_board_opp.x - submarine.x
 
             if (y_diff,x_diff) in self.dict_torpedo:
+                print("ENTER {} {}".format(y_diff,x_diff),file=sys.stderr)
                 self.dict_torpedo[(y_diff,x_diff)] += 2
+                print("CHECK {}".format(self.dict_torpedo[(y_diff,x_diff)]),file=sys.stderr)
+            else :
+                print("LOOSE",file=sys.stderr)
 
             for y_drow, x_dcol in OBSERVER_TORPEDO:
 
@@ -1010,10 +1016,15 @@ class TorpedoObserver():
         return True
 
     def notify_else(self,submarine,kanban_mine,kanban_opp):
+
         y_drow,x_dcol = max(self.dict_torpedo, key = self.dict_torpedo.get)
+        print("FIND TORPEDO {} {}".format(y_drow,x_dcol),file=sys.stderr)
 
         if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
+
             y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
+            print("TORPEDO {} {}".format(y_drow,x_dcol),file=sys.stderr)
+
             submarine.write_torpedo(x_col,y_row)
             submarine.torpedo = 3
             self.torpedo = (y_row,x_col)
@@ -1125,7 +1136,7 @@ class TriggerObserver():
     def notify_check(self,submarine,kanban_mine,kanban_opp):
         k_coord = self.trigger
         y_torpedo, x_torpedo = k_coord
-        print("torpedo_check lost life {} nb observer check {}".format(
+        print("trigger_check lost life {} nb observer check {}".format(
         self.lost_life,self.nb_observer_check),file=sys.stderr)
 
         if self.lost_life == 0:
@@ -1153,10 +1164,10 @@ class TriggerObserver():
                 for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
-                        print("torpedo check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        print("trigger check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
                         kanban_opp.out.add( (board,stalk) )
                     else:
-                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        print("trigger check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
 
 
                 return True
@@ -1169,10 +1180,10 @@ class TriggerObserver():
                 for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
-                        print("torpedo check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        print("trigger check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
                         kanban_opp.out.add( (board,stalk) )
                     else:
-                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        print("trigger check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
 
                 return True
         return False
@@ -1232,292 +1243,56 @@ class ObserverQueue():
         # New kanban opp with new reference
         return kanban_opp
 
-class Planning():
-
-    def __init__(self,clone):
-        self.forward = None
-        self.index = 0
-        self.is_forward = True
-
-
-    def __next__(self):
-        distance = 0
-        if self.is_forward == True and self.index != self.last :
-            self.index += 1
-            distance = self.last - self.index
-
-        elif self.is_forward == True and self.index == self.last :
-            self.index -= 1
-            distance = self.index
-            self.is_forward = False
-
-        elif self.is_forward == False and self.index != 0 :
-            self.index -= 1
-            distance = self.index
-
-        elif self.is_forward == False and self.index == 0 :
-            self.index += 1
-            distance = self.index
-            self.is_forward = True
-
-        print(self.index)
-        return (distance, self.forward[self.index])
-
-    @property
-    def last(self):
-        return len(self.forward) - 1
-
-class StrategyStarting():
-
-    def __init__(self,clone):
-        self.previous_sector = 5
-        self.previous_sector_a, self.previous_sector_b = 0, 0
-        self.iter_sector_reducing, self.sector_next = None, -1
-        self.turn = 0
-        pass
-
-    def set_up(self,kanban_path,TREASURE_MAP):
-        print("TREASURE_MAP",file=sys.stderr)
-        for t_r in TREASURE_MAP:
-            print(t_r,file=sys.stderr)
-
-        kanban_path.set_up(TREASURE_MAP)
-        kanban_path.update()
-
-        REDUCE_MAP = kanban_path.grid
-
-        print("REDUCE_MAP",file=sys.stderr)
-        for t_r in REDUCE_MAP:
-            print(t_r,file=sys.stderr)
-
-        kanban_path.update_sector()
-
-        print(self.previous_sector)
-        coord, kanban_path.last = next(iter(kanban_path.sector[self.previous_sector].items()))
-        del kanban_path.sector[5][coord]
-
-        path_reducing = []
-        path_reducing.append(kanban_path.last)
-
-        return path_reducing
-
-    def path(self,kanban_path,path_reducing):
-        #self.turn+= 1
-        if self.sector_next == 0 :
-            pass
-
-        elif self.sector_next == -1:
-            k_next_tuple = SECTOR_TRANSIT[self.previous_sector]
-            type, result = kanban_path.solve_sector(k_next_tuple)
-            path_reducing.extend(result[1:])
-            kanban_path.next_sector(path_reducing)
-            if type == k_PATH_LAST :
-                # PERDU pour PERDU
-                self.sector_next = 0
-
-            elif self.previous_sector_a == 0:
-                self.previous_sector = self.previous_sector_a = sector(path_reducing[-1])
-            else :
-                self.previous_sector = self.previous_sector_b = sector(path_reducing[-1])
-                t_sector_reducing = (self.previous_sector_a,self.previous_sector_b)
-                self.iter_sector_reducing = iter(SECTOR_REDUCING[t_sector_reducing])
-                next(self.iter_sector_reducing)
-                self.sector_next = next(self.iter_sector_reducing)
-
-        else :
-            self.sector_next = next(self.iter_sector_reducing)
-            print("Sector next: {}".format(self.sector_next),file=sys.stderr)
-            type, result = kanban_path.solve_sector([self.sector_next])
-            path_reducing.extend(result[1:])
-            kanban_path.next_sector(path_reducing)
-            if type == k_PATH_LAST :
-                # PERDU pour PERDU
-                self.sector_next = 0
-
-        return path_reducing
-
-    def movement(self, submarine, kanban_path, planning):
-        self.turn += 1
-
-        if self.turn < 10 :
-            planning.forward = self.path(kanban_path,planning.forward)
-
-        if submarine.silence == 0 :
-            distance, p1_next = planning.__next__()
-            y_row, x_col = p1_next.y, p1_next.x
-            dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
-            submarine.y, submarine.x = y_row, x_col
-            submarine.write_silence(dir,1)
-
-            distance, p1_next = planning.__next__()
-            return (True, p1_next)
-
-        else :
-            distance, p1_next = planning.__next__()
-            if distance == 0 :
-                submarine.write_surface()
-            return (False, p1_next)
-
-class StrategyDiscrete():
-
-    def __init__(self,clone):
-        self.turn = 0
-        if clone is not None :
-            self.turn = clone.turn
-
-    def movement(self, submarine, kanban_path, planning):
-        self.turn += 1
-
-        if submarine.silence == 0 and submarine.mine == 0 :
-            distance, p1_next = planning.__next__()
-            if distance < 5 :
-                planning.is_forward = False if planning.is_forward else True
-                submarine.write_surface()
-
-            y_row, x_col = p1_next.y, p1_next.x
-            dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
-            submarine.y, submarine.x = y_row, x_col
-            submarine.write_silence(dir,1)
-
-            distance, p1_next = planning.__next__()
-            return (True, p1_next)
-
-        else :
-            distance, p1_next = planning.__next__()
-            if distance == 0 :
-                submarine.write_surface()
-            return (False, p1_next)
-
-class StrategySearching():
-
-    def __init__(self,clone):
-        self.turn = 0
-        if clone is not None :
-            self.turn = clone.turn
-
-    def movement(self, submarine, kanban_path, planning):
-        self.turn += 1
-
-        distance, p1_next = planning.__next__()
-        if distance == 0 :
-            submarine.write_surface()
-        return (False, p1_next)
-
-class StrategyMining():
-
-    def __init__(self, clone):
-        self.turn = 0
-        if clone is not None :
-            self.turn = clone.turn
-
-    def movement(self, submarine, kanban_path, planning):
-        # In case of MINING and TORPEDO is full
-        if submarine.silence == 0 :
-            distance, p1_next = planning.__next__()
-            if distance < 5 :
-                planning.is_forward = False if planning.is_forward else True
-                submarine.write_surface()
-
-            y_row, x_col = p1_next.y, p1_next.x
-            dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
-            submarine.y, submarine.x = y_row, x_col
-            submarine.write_silence(dir,1)
-
-            distance, p1_next = planning.__next__()
-            return (True, p1_next)
-
-        else :
-            distance, p1_next = planning.__next__()
-            if distance == 0 :
-                submarine.write_surface()
-            return (False, p1_next)
-
-class StrategyWaring():
-
-    def __init__(self, clone):
-        self.turn = 0
-        if clone is not None :
-            self.turn = clone.turn
-
-    def movement(self, submarine, kanban_path, planning):
-        # In case of MINING and TORPEDO is full
-        if submarine.silence == 0 :
-            distance, p1_next = planning.__next__()
-            if distance < 5 :
-                planning.is_forward = False if planning.is_forward else True
-                submarine.write_surface()
-
-            y_row, x_col = p1_next.y, p1_next.x
-            dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
-            submarine.y, submarine.x = y_row, x_col
-            submarine.write_silence(dir,1)
-
-            distance, p1_next = planning.__next__()
-            return (True, p1_next)
-
-        else :
-            distance, p1_next = planning.__next__()
-            if distance == 0 :
-                submarine.write_surface()
-            return (False, p1_next)
-
 
 if __name__ == '__main__':
     read_map()
     t_check_map(TREASURE_MAP)
 
-    # kanban_path  = PathSolving(None)
-    # kanban_path.set_up(TREASURE_MAP)
-    # kanban_path.update()
-
-    # From TI strategy full_map.py
-    g_strategy_state = StrategyStarting(None)
     kanban_path  = PathSolving(None)
-    kanban_plan = Planning(None)
-    # End FRom TI Strategy full_map.py
+    kanban_path.set_up(TREASURE_MAP)
+    kanban_path.update()
 
-    kanban_plan.forward = g_strategy_state.set_up(kanban_path,TREASURE_MAP)
     REDUCE_MAP = kanban_path.grid
-    #print("REDUCE_MAP",file=sys.stderr)
-    #t_check_map(REDUCE_MAP)
+    print("REDUCE_MAP",file=sys.stderr)
+    t_check_map(REDUCE_MAP)
 
     # FROM TI reducing.py WORK
     kanban_path.update_sector()
 
     # First node
-    # previous_sector = 5
-    # previous_sector_a, previous_sector_b = 0,0
-    # coord, kanban_path.last = next(iter(kanban_path.sector[previous_sector].items()))
-    # del kanban_path.sector[5][coord]
+    previous_sector = 5
+    previous_sector_a, previous_sector_b = 0,0
+    coord, kanban_path.last = next(iter(kanban_path.sector[previous_sector].items()))
+    del kanban_path.sector[5][coord]
 
-    # path_reducing = []
-    # path_reducing.append(kanban_path.last)
-    # iter_sector_reducing, sector_next = None, -1
+    path_reducing = []
+    path_reducing.append(kanban_path.last)
+    iter_sector_reducing, sector_next = None, -1
 
-    #while True:
-        # if sector_next == 0 :
-        #     break
-        #
-        # elif sector_next == -1:
-        #     k_next_tuple = SECTOR_TRANSIT[previous_sector]
-        #     result = kanban_path.solve_sector(k_next_tuple)
-        #     path_reducing.extend(result[1:])
-        #     kanban_path.next_sector(path_reducing)
-        #     if previous_sector_a == 0:
-        #         previous_sector = previous_sector_a = sector(path_reducing[-1])
-        #     else :
-        #         previous_sector = previous_sector_b = sector(path_reducing[-1])
-        #         t_sector_reducing = (previous_sector_a,previous_sector_b)
-        #         iter_sector_reducing = iter(SECTOR_REDUCING[t_sector_reducing])
-        #         next(iter_sector_reducing)
-        #         sector_next = next(iter_sector_reducing)
-        #
-        # else :
-        #     sector_next = next(iter_sector_reducing)
-        #     print("Sector next: {}".format(sector_next),file=sys.stderr)
-        #     result = kanban_path.solve_sector([sector_next])
-        #     path_reducing.extend(result[1:])
-        #     kanban_path.next_sector(path_reducing)
+    while True:
+        if sector_next == 0 :
+            break
+
+        elif sector_next == -1:
+            k_next_tuple = SECTOR_TRANSIT[previous_sector]
+            result = kanban_path.solve_sector(k_next_tuple)
+            path_reducing.extend(result[1:])
+            kanban_path.next_sector(path_reducing)
+            if previous_sector_a == 0:
+                previous_sector = previous_sector_a = sector(path_reducing[-1])
+            else :
+                previous_sector = previous_sector_b = sector(path_reducing[-1])
+                t_sector_reducing = (previous_sector_a,previous_sector_b)
+                iter_sector_reducing = iter(SECTOR_REDUCING[t_sector_reducing])
+                next(iter_sector_reducing)
+                sector_next = next(iter_sector_reducing)
+
+        else :
+            sector_next = next(iter_sector_reducing)
+            print("Sector next: {}".format(sector_next),file=sys.stderr)
+            result = kanban_path.solve_sector([sector_next])
+            path_reducing.extend(result[1:])
+            kanban_path.next_sector(path_reducing)
 
     game_board[MY_ID] = Board(game_board[MY_ID])
 
@@ -1537,20 +1312,16 @@ if __name__ == '__main__':
     # FROM TI reducing.py WORK
     choice = 0
 
-    # iter_forward = iter(path_reducing)
-    # iter_backward = iter(reversed(path_reducing))
-    #
-    # p1_forward = next(iter_forward)
-    # p1_backward = next(iter_backward)
-    # print("{} {}".format(p1_forward.x,p1_forward.y))
-    #
-    # print("{} {}".format(p1_forward.x,p1_forward.y),file=sys.stderr)
-    # print("{} {}".format(p1_backward.x,p1_backward.y),file=sys.stderr)
+    iter_forward = iter(path_reducing)
+    iter_backward = iter(reversed(path_reducing))
 
+    p1_forward = next(iter_forward)
+    p1_backward = next(iter_backward)
+    print("{} {}".format(p1_forward.x,p1_forward.y))
     # FROM TI reducing.py WORK
 
-    # FROM TI strategy full_map.py
-    print("{} {}".format(kanban_plan.forward[0].x,kanban_plan.forward[0].y))
+    print("{} {}".format(p1_forward.x,p1_forward.y),file=sys.stderr)
+    print("{} {}".format(p1_backward.x,p1_backward.y),file=sys.stderr)
 
     TURN_MY_SILENCE = 0
 
@@ -1572,47 +1343,46 @@ if __name__ == '__main__':
         p1_next = None
         need_surface = 0
 
-        # for i1 in range(2):
-        #
-        #     if i1 == 0 and TURN_MY_SILENCE < 8 :
-        #         continue
-        #
-        #     if i1 == 0 and game_board[MY_ID].silence != 0:
-        #         continue
-        #
-        #     if i1 == 1 and need_surface == 1 :
-        #         continue
-        #
-        #     if choice == 0:
-        #         p1_next = p1_forward = next(iter_forward)
-        #
-        #         if p1_forward == p1_backward:
-        #             choice = 1
-        #             iter_forward = iter(path_reducing)
-        #             p1_forward = next(iter_forward)
-        #             need_surface = 1
-        #             #game_board[MY_ID].write_surface()
-        #
-        #     elif choice == 1:
-        #         p1_next = p1_backward = next(iter_backward)
-        #
-        #         if p1_forward == p1_backward:
-        #             choice = 0
-        #             iter_backward = iter(reversed(path_reducing))
-        #             p1_backward = next(iter_backward)
-        #             need_surface = 1
-        #             #game_board[MY_ID].write_surface()
-        #
-        #     if i1 == 0 and need_surface == 0:
-        #         y_row, x_col = p1_next.y, p1_next.x
-        #         dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
-        #         game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
-        #         game_board[MY_ID].write_silence(dir,1)
-        #         TURN_MY_SILENCE = 0
-        #
-        #
-        # TURN_MY_SILENCE += 1
-        _, p1_next = g_strategy_state.movement(game_board[MY_ID], kanban_path, kanban_plan)
+        for i1 in range(2):
+
+            if i1 == 0 and TURN_MY_SILENCE < 8 :
+                continue
+
+            if i1 == 0 and game_board[MY_ID].silence != 0:
+                continue
+
+            if i1 == 1 and need_surface == 1 :
+                continue
+
+            if choice == 0:
+                p1_next = p1_forward = next(iter_forward)
+
+                if p1_forward == p1_backward:
+                    choice = 1
+                    iter_forward = iter(path_reducing)
+                    p1_forward = next(iter_forward)
+                    need_surface = 1
+                    #game_board[MY_ID].write_surface()
+
+            elif choice == 1:
+                p1_next = p1_backward = next(iter_backward)
+
+                if p1_forward == p1_backward:
+                    choice = 0
+                    iter_backward = iter(reversed(path_reducing))
+                    p1_backward = next(iter_backward)
+                    need_surface = 1
+                    #game_board[MY_ID].write_surface()
+
+            if i1 == 0 and need_surface == 0:
+                y_row, x_col = p1_next.y, p1_next.x
+                dir = GET_DIRS[ (y_row - game_board[MY_ID].y, x_col - game_board[MY_ID].x)]
+                game_board[MY_ID].y, game_board[MY_ID].x = y_row, x_col
+                game_board[MY_ID].write_silence(dir,1)
+                TURN_MY_SILENCE = 0
+
+
+        TURN_MY_SILENCE += 1
 
         #t_check_map(game_board[MY_ID].treasure_map)
         print("Position (y:{},x:{})".format(game_board[MY_ID].y,game_board[MY_ID].x),file=sys.stderr)
