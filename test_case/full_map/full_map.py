@@ -68,7 +68,7 @@ class StrategyStarting():
             pass
 
         elif self.sector_next == -1:
-            k_next_tuple = SECTOR_TRANSIT[previous_sector]
+            k_next_tuple = SECTOR_TRANSIT[self.previous_sector]
             result = kanban_path.solve_sector(k_next_tuple)
             path_reducing.extend(result[1:])
             kanban_path.next_sector(path_reducing)
@@ -83,8 +83,8 @@ class StrategyStarting():
 
         else :
             self.sector_next = next(self.iter_sector_reducing)
-            print("Sector next: {}".format(sector_next),file=sys.stderr)
-            result = kanban_path.solve_sector([sector_next])
+            print("Sector next: {}".format(self.sector_next),file=sys.stderr)
+            result = kanban_path.solve_sector([self.sector_next])
             path_reducing.extend(result[1:])
             kanban_path.next_sector(path_reducing)
 
