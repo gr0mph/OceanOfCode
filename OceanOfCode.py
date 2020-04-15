@@ -78,7 +78,7 @@ DEEP_SILENCE2 = 31
 SEARCH_OPP_TORPEDO = 7
 SEARCH_OPP_TORPEDO_MIN = 3
 SEARCH_OPP_TRIGGER = 7
-SEARCH_OPP_TRIGERR_LOTS = 10
+SEARCH_OPP_TRIGERR_LOTS = 17
 
 class Node:
 
@@ -1005,9 +1005,14 @@ class TorpedoObserver():
         else :
             y_diff = k_board_opp.y - submarine.y
             x_diff = k_board_opp.x - submarine.x
+            print("FIND TORPEDO diff {},{} opp {},{} me {},{}".format(
+                x_diff,y_diff,k_board_opp.x,k_board_opp.y,submarine.x,submarine.y),file=sys.stderr)
+
 
             if (y_diff,x_diff) in self.dict_torpedo:
+                print("FIND TORPEDO {},{}".format(x_diff,y_diff),file=sys.stderr)
                 self.dict_torpedo[(y_diff,x_diff)] += 2
+                print("DICT TORPEDO {}".format(self.dict_torpedo[(y_diff,x_diff)]),file=sys.stderr)
 
             for y_drow, x_dcol in OBSERVER_TORPEDO:
 
@@ -1020,6 +1025,7 @@ class TorpedoObserver():
         y_drow,x_dcol = max(self.dict_torpedo, key = self.dict_torpedo.get)
 
         if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
+            print("ELSE {} {} SCORE {}".format(x_dcol,y_drow, self.dict_torpedo[(y_drow,x_dcol)]),file=sys.stderr)
             y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
             submarine.write_torpedo(x_col,y_row)
             submarine.torpedo = 3
@@ -1216,12 +1222,21 @@ class ObserverQueue():
 
         success = False
 
-        for instance in self.observer:
+        to_detach = {}
+        for i1,instance in enumerate(self.observer):
 
+            print(instance,file=sys.stderr)
             success = instance.notify_else(submarine,kanban_mine,kanban_opp)
 
             if success == False :
-                self.detach(instance)
+                to_detach[i1] = instance
+
+        for i1,instance in to_detach.items():
+            print(instance,file=sys.stderr)
+            print(len(self.observer),file=sys.stderr)
+
+            self.observer.remove(instance)
+
 
     def update(self,submarine,kanban_opp,kanban_mine):
         for instance in self.observer:
@@ -1384,10 +1399,10 @@ class StrategyDiscrete():
 
         if submarine.silence == 0 and submarine.mine == 0 :
             distance, p1_next = planning.__next__()
-            if distance < 5 :
-                planning.is_forward = False if planning.is_forward else True
+            if distance == 0 :
                 submarine.need_surface = True
                 #submarine.write_surface()
+                return (False, p1_next)
 
             y_row, x_col = p1_next.y, p1_next.x
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
@@ -1435,11 +1450,11 @@ class StrategyMining():
         # In case of MINING and TORPEDO is full
         if submarine.silence == 0 :
             distance, p1_next = planning.__next__()
-            if distance < 5 :
+            if distance == 0 :
                 planning.is_forward = False if planning.is_forward else True
                 #submarine.write_surface()
                 submarine.need_surface = True
-
+                return (False, p1_next)
 
             y_row, x_col = p1_next.y, p1_next.x
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
@@ -1469,10 +1484,11 @@ class StrategyWaring():
         # In case of MINING and TORPEDO is full
         if submarine.silence == 0 :
             distance, p1_next = planning.__next__()
-            if distance < 5 :
+            if distance == 0 :
                 planning.is_forward = False if planning.is_forward else True
                 #submarine.write_surface()
                 submarine.need_surface = True
+                return (False, p1_next)
 
             y_row, x_col = p1_next.y, p1_next.x
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
@@ -1589,6 +1605,10 @@ if __name__ == '__main__':
     _observer = ObserverQueue(None)
     # End from TI observing
 
+    opp_unknow_me = True
+    me_unknow_opp = True
+    nearest = False
+
     while True:
         print("TURN {}".format(turn),file=sys.stderr)
         game_board[MY_ID] = Board(game_board[MY_ID])
@@ -1655,17 +1675,30 @@ if __name__ == '__main__':
 
         opponent_orders = input()
 
+        if len(kanban_opp.inp) < 9 :
+            b1, _ = next(iter(kanban_opp.inp))
+            d1 = manhattan( game_board[MY_ID], b1)
+            nearest = True if d1 < 10 else False
+            me_unknow_opp = False
+        else :
+            me_unknow_opp = True
+
         _observer.lost_life = OPP_LOST_LIFE
         # TODO
         _observer.nb_observer_check = len(_observer.observer)
         if "SURFACE" in opponent_orders:
             _observer.lost_life -= 1
+
         if "TORPEDO" in opponent_orders:
             # TODO: Can be improved
             _observer.nb_observer_check += 1
+            opp_unknow_me = False
+            nearest = True
+
         if "TRIGGER" in opponent_orders:
             # TODO: Can be improved
             _observer.nb_observer_check += 1
+
         print("Before UPDATE Lost Life {} Nb Observer {}".format(
         _observer.lost_life,_observer.nb_observer_check),file=sys.stderr)
 
@@ -1755,7 +1788,33 @@ if __name__ == '__main__':
             kanban_opp = StalkAndTorpedo(kanban_opp)
             print("END silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
 
-        state = update_state(state,turn,game_board[MY_ID],kanban_opp)
+
+        #state = update_state(state,turn,game_board[MY_ID],kanban_opp)
+        if turn <= 15 :
+            state = k_STATE_AGENT_STARTING
+
+        elif opp_unknow_me == True and me_unknow_opp == True :
+            state = k_STATE_AGENT_DISCRETE
+            g_strategy_state = StrategyDiscrete(g_strategy_state)
+
+        elif nearest == True :
+            state = k_STATE_AGENT_WARING
+            g_strategy_state = StrategyWaring(g_strategy_state)
+
+        elif me_unknow_opp == True :
+            state = k_STATE_AGENT_SEARCHING
+            g_strategy_state = StrategySearching(g_strategy_state)
+
+        elif opp_unknow_me == True :
+            state = k_STATE_AGENT_DISCRETE
+            g_strategy_state = StrategyDiscrete(g_strategy_state)
+
+        else :
+            state = k_STATE_AGENT_MINING
+            g_strategy_state = StrategyMining(g_strategy_state)
+
+
+
         text = update_agent(g_strategy_state.agent,game_board[MY_ID])
 
         # From TI reducing work
