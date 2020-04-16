@@ -108,14 +108,19 @@ class Node:
         coord = self.y, self.x
         length = len(results)
 
-        if length <= 1 :
-             y_row, x_col = coord
-             d1, y_drow, x_dcol = results[0]
-             solving.delete.append(coord)
-             coord = y_row + y_drow, x_col + x_dcol
-             if coord not in solving.dirunknow :
-                 solving.dirunknow.append(coord)
-             REDUCE_MAP[self.y][self.x] = 'x'
+        if len(results) == 0 :
+            y_row, x_col = coord
+            solving.delete.append(coord)
+            REDUCE_MAP[self.y][self.x] = 'x'
+
+        elif length <= 1 :
+            y_row, x_col = coord
+            d1, y_drow, x_dcol = results[0]
+            solving.delete.append(coord)
+            coord = y_row + y_drow, x_col + x_dcol
+            if coord not in solving.dirunknow :
+                solving.dirunknow.append(coord)
+            REDUCE_MAP[self.y][self.x] = 'x'
 
         elif length == 2 :
             #if length <= 2 :
@@ -506,6 +511,19 @@ class HamiltonSolver:
                 legal_add(path_pop())
                 dirs_pop()
 
+class LegalTorpedo():
+
+    def __init__(self,clone):
+        self.reducing_map = None
+        self.legal = set()
+
+    def set_up(self,REDUCING_MAP):
+        self.reducing_map = REDUCING_MAP
+        for y_row, row in enumerate(self.reducing_map):
+            for x_col, item in enumerate(row):
+                if item in EMPTY_SYMBOLS:
+                    self.legal.add( (y_row, x_col) )
+
 class MineAndTrigger():
 
     def __init__(self,clone):
@@ -592,7 +610,8 @@ class StalkAndLegal():
         self.legal.clear()
         self.set_up(submarine.treasure_map)
         new_coord = submarine.y , submarine.x
-        self.legal.remove(new_coord)
+        if new_coord in self.legal:
+            self.legal.remove(new_coord)
 
     def read_silence(self,board1,length1,dy_row,dx_col):
         legal = self.legal
@@ -605,12 +624,45 @@ class StalkAndLegal():
                 return False
         return True
 
+# In fact, it's the second method
 STALKING_SILENCE = {
 'E':( (-4,0),(-3,0),(-2,0),(-1,0),(0,1),(0,2),(0,3),(0,4),(1,0),(2,0),(3,0),(4,0) ),
 'W':( (-4,0),(-3,0),(-2,0),(-1,0),(0,-1),(0,-2),(0,-3),(0,-4),(1,0),(2,0),(3,0),(4,0) ),
 'N':( (0,-1),(0,-2),(0,-3),(0,-4),(-4,0),(-3,0),(-2,0),(-1,0),(0,1),(0,2),(0,3),(0,4) ),
 'S':( (0,-1),(0,-2),(0,-3),(0,-4),(4,0),(3,0),(2,0),(1,0),(0,1),(0,2),(0,3),(0,4) )
 }
+
+# With DICTIONNARY, LIST, TUPLE of TUPLE
+STALKING_SILENCE3 = {
+'E':[
+( (-1,0),(-2,0),(-3,0),(-4,0) ),
+( (0,1),(0,2),(0,3),(0,4) ),
+( (1,0),(2,0),(3,0),(4,0) )
+],
+'W':[
+( (-1,0),(-2,0),(-3,0),(-4,0) ),
+( (0,-1),(0,-2),(0,-3),(0,-4) ),
+( (1,0),(2,0),(3,0),(4,0) )
+],
+'N':[
+( (0,-1),(0,-2),(0,-3),(0,-4) ),
+( (-1,0),(-2,0),(-3,0),(-4,0) ),
+( (0,1),(0,2),(0,3),(0,4) )
+],
+'S':[
+( (0,-1),(0,-2),(0,-3),(0,-4) ),
+( (1,0),(2,0),(3,0),(4,0) ),
+( (0,1),(0,2),(0,3),(0,4) )
+]
+}
+
+STALKING_SILENCE_SECTOR = {
+(0,'E') : (1,2,3,4,5,6,7,8,9) , (1,'E') : (2,3,5,6,8,9) , (2,'E') : (3,6,9) ,
+(0,'W') : (1,2,3,4,5,6,7,8,9) , (1,'W') : (1,2,4,5,7,8) , (2,'W') : (1,4,7) ,
+(0,'N') : (1,2,3,4,5,6,7,8,9) , (1,'N') : (1,2,3,4,5,6) , (2,'N') : (1,2,3) ,
+(0,'S') : (1,2,3,4,5,6,7,8,9) , (1,'S') : (4,5,6,7,8,9) , (2,'S') : (7,8,9)
+}
+
 
 
 class StalkAndTorpedo():
@@ -620,9 +672,11 @@ class StalkAndTorpedo():
         self.out = set()
         self.inp = set()
         self.previous_move = ''
+        self.previous_nb = 0
         if clone is not None :
             self.treasure_map, self.inp = clone.treasure_map, clone.out
             self.previous_move = clone.previous_move
+            self.previous_nb = clone.previous_nb
 
     def __str__(self):
         text = ''
@@ -630,12 +684,17 @@ class StalkAndTorpedo():
             text = '{}\n({},{},life{})'.format(text,board_in.x, board_in.y, board_in.life)
         return text
 
-    def set_up(self,TREASURE_MAP):
+    def set_up(self,tuple_sector,TREASURE_MAP):
         inp_add = self.inp.add
         new_board, new_stalk = None, None
         self.treasure_map = TREASURE_MAP
         for y_row, row in enumerate(self.treasure_map):
             for x_col, item in enumerate(row):
+
+                sector = 1 + (x_col // 5) + ( (y_row // 5) * 3 )
+                if sector not in tuple_sector :
+                    continue
+
                 if item in EMPTY_SYMBOLS:
                     new_board = Board(None)
                     new_board.x, new_board.y = x_col, y_row
@@ -651,6 +710,7 @@ class StalkAndTorpedo():
     def read_move(self,data):
         data = data[0]
         d, dy_row, dx_col = next( result_dir for result_dir in DIRS if data in result_dir )
+        self.previous_nb = (self.previous_nb + 1) if (self.previous_move == d) else 0
         self.previous_move = d
         for board,stalk in self.inp:
             result = stalk.read_move(board,dy_row,dx_col)
@@ -669,6 +729,7 @@ class StalkAndTorpedo():
                 self.out.add( (board,stalk) )
 
     def read_surface2(self,data):
+        print("Read surface 2 {}".format(int(data[0])),file=sys.stderr)
         for board, stalk in self.inp:
             if int(data[0]) == sector(board):
                 #board.treasure_map = copy.deepcopy(TREASURE_MAP)
@@ -714,7 +775,11 @@ class StalkAndTorpedo():
         if len(self.inp) >= DEEP_SILENCE2:
             SILENCE_NEED_FUSION = 0
             self.inp.clear()
-            self.set_up(self.treasure_map)
+
+            identical_movement_number = self.previous_nb // 5
+            tuple_sector = STALKING_SILENCE_SECTOR[(identical_movement_number,self.previous_move)]
+
+            self.set_up(tuple_sector,self.treasure_map)
             self.out = self.inp
 
         else :
@@ -722,12 +787,25 @@ class StalkAndTorpedo():
             for board, stalk in inp:
                 out_add( (board, stalk))
 
-                t_stalking_silence = STALKING_SILENCE[self.previous_move]
-                for y_drow,x_dcol in t_stalking_silence:
-                    board1, stalk1 = Board(board), StalkAndLegal(stalk)
-                    board1.y += y_drow
-                    board1.x += x_dcol
-                    out_add( (board1,stalk1) )
+                #t_stalking_silence = STALKING_SILENCE[self.previous_move]
+                #for y_drow,x_dcol in t_stalking_silence:
+                #    board1, stalk1 = Board(board), StalkAndLegal(stalk)
+                #    board1.y += y_drow
+                #    board1.x += x_dcol
+                #    out_add( (board1,stalk1) )
+
+                t_stalking_silence = STALKING_SILENCE3[self.previous_move]
+                for tuple_dir in t_stalking_silence:
+                    for y_drow,x_dcol in tuple_dir:
+                        #print("STALKING_SILENCE 3 {} {}".format(x_dcol,y_drow),file=sys.stderr)
+                        k_coord = board.y + y_drow, board.x + x_dcol
+                        if k_coord in stalk.legal :
+                            board1, stalk1 = Board(board), StalkAndLegal(stalk)
+                            board1.y += y_drow
+                            board1.x += x_dcol
+                            out_add( (board1,stalk1) )
+                        else :
+                            break
 
     def silence_fusion(self):
         inp = self.inp
@@ -888,12 +966,16 @@ class Board(Submarine):
         self.turn = 0
         self.x , self.y , self.life = 0, 0, 6
         self.torpedo, self.sonar, self.silence, self.mine = 0, 0, 0, 0
+        self.need_surface = False
+        self.legal_torpedo = None
+
         if clone is not None:
             self.turn = clone.turn + 1
             self.x, self.y, self.life = clone.x, clone.y, clone.life
             self.torpedo, self.sonar = clone.torpedo, clone.sonar
             self.silence, self.mine = clone.silence, clone.mine
-        self.need_surface = False
+            self.need_surface = clone.need_surface
+            self.legal_torpedo = clone.legal_torpedo # Only not lost link
 
     def __str__(self):
         return '({},{})'.format(self.x,self.y)
@@ -945,15 +1027,31 @@ def update_state(state,turn,board,kanban_opp):
 def sector(obj1):
     return 1 + (obj1.x // 5) + ( (obj1.y // 5) * 3 )
 
+
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
     return distance
 
 def square(obj1,obj2):
-    is_true = True
-    is_true &= False if abs(obj1.x - obj2.x) > 1 else True
-    is_true &= False if abs(obj1.y - obj2.y) > 1 else True
-    return is_true
+    if abs(obj1.x - obj2.x) > 1 :
+        return False
+
+    if abs(obj1.y - obj2.y) > 1 :
+        return False
+
+    return True
+
+def square2(mine,my_board,opp_board):
+    if square(my_board,mine) == True :
+        # Very not interesting
+        return False
+
+    if square(opp_board,mine) == True :
+        # Very interesting
+        #print("SQUARE2 ({},{}) ({},{})".format(opp_board.x,opp_board.y,mine.x,mine.y),file=sys.stderr)
+        return True
+
+    return False
 
 def path_solving(game_board,puzzle):
     puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
@@ -1008,15 +1106,20 @@ class TorpedoObserver():
             print("FIND TORPEDO diff {},{} opp {},{} me {},{}".format(
                 x_diff,y_diff,k_board_opp.x,k_board_opp.y,submarine.x,submarine.y),file=sys.stderr)
 
-
             if (y_diff,x_diff) in self.dict_torpedo:
                 print("FIND TORPEDO {},{}".format(x_diff,y_diff),file=sys.stderr)
-                self.dict_torpedo[(y_diff,x_diff)] += 2
+                self.dict_torpedo[(y_diff,x_diff)] += 6
                 print("DICT TORPEDO {}".format(self.dict_torpedo[(y_diff,x_diff)]),file=sys.stderr)
 
             for y_drow, x_dcol in OBSERVER_TORPEDO:
 
                 y_diff_drow,x_diff_dcol = y_diff + y_drow, x_diff + x_dcol
+
+                y1_ = k_board_opp.y + y_drow
+                x1_ = k_board_opp.x + x_dcol
+                if (y1_,x1_) not in submarine.legal_torpedo.legal :
+                    continue
+
                 if (y_diff_drow,x_diff_dcol) in self.dict_torpedo:
                     self.dict_torpedo[(y_diff_drow,x_diff_dcol)] += 1
         return True
@@ -1038,6 +1141,12 @@ class TorpedoObserver():
     def notify_check(self,submarine,kanban_mine,kanban_opp):
         k_coord = self.torpedo
         y_torpedo, x_torpedo = k_coord
+
+        if submarine.torpedo == 3 :
+            # Torpedo has failed
+            print("Torpedo fail: {} --> no update".format(self),file=sys.stderr)
+            return
+
         print("torpedo_check lost life {} nb observer check {}".format(
         self.lost_life,self.nb_observer_check),file=sys.stderr)
 
@@ -1090,9 +1199,7 @@ class TorpedoObserver():
                 return True
         return False
 
-def square2(mine,my_board,opp_board):
-    result = True if square(mine,my_board) == False and square(mine,opp_board) == True else False
-    return result
+
 
 class TriggerObserver():
 
@@ -1114,9 +1221,15 @@ class TriggerObserver():
         list_mine = [mine for mine in kanban_mine.minefield if square2(mine,submarine,k_board_opp)]
         for m1 in list_mine:
             if m1 in self.dict_mine:
-                self.dict_mine[m1] += 1
+                if m1.y == k_board_opp.y and m1.x == k_board_opp.x :
+                    self.dict_mine[m1] += 6
+                else :
+                    self.dict_mine[m1] += 1
             else :
-                self.dict_mine[m1] = 1
+                if m1.y == k_board_opp.y and m1.x == k_board_opp.x :
+                    self.dict_mine[m1] = 6
+                else :
+                    self.dict_mine[m1] = 1
         return True
 
     def notify_else(self,submarine,kanban_mine,kanban_opp):
@@ -1138,7 +1251,8 @@ class TriggerObserver():
     def notify_check(self,submarine,kanban_mine,kanban_opp):
         k_coord = self.trigger
         y_torpedo, x_torpedo = k_coord
-        print("torpedo_check lost life {} nb observer check {}".format(
+
+        print("trigger_check lost life {} nb observer check {}".format(
         self.lost_life,self.nb_observer_check),file=sys.stderr)
 
         if self.lost_life == 0:
@@ -1363,9 +1477,6 @@ class StrategyStarting():
     def movement(self, submarine, kanban_path, planning):
         self.turn += 1
 
-        #if self.turn < 10 :
-        #    planning.forward = self.path(kanban_path,planning.forward)
-
         if submarine.silence == 0 :
             distance, p1_next = planning.__next__()
             y_row, x_col = p1_next.y, p1_next.x
@@ -1410,6 +1521,8 @@ class StrategyDiscrete():
             submarine.write_silence(dir,1)
 
             distance, p1_next = planning.__next__()
+            if distance == 0 :
+                submarine.need_surface = True
             return (True, p1_next)
 
         else :
@@ -1451,7 +1564,6 @@ class StrategyMining():
         if submarine.silence == 0 :
             distance, p1_next = planning.__next__()
             if distance == 0 :
-                planning.is_forward = False if planning.is_forward else True
                 #submarine.write_surface()
                 submarine.need_surface = True
                 return (False, p1_next)
@@ -1462,6 +1574,8 @@ class StrategyMining():
             submarine.write_silence(dir,1)
 
             distance, p1_next = planning.__next__()
+            if distance == 0 :
+                submarine.need_surface = True
             return (True, p1_next)
 
         else :
@@ -1496,6 +1610,8 @@ class StrategyWaring():
             submarine.write_silence(dir,1)
 
             distance, p1_next = planning.__next__()
+            if distance == 0 :
+                submarine.need_surface = True
             return (True, p1_next)
 
         else :
@@ -1564,10 +1680,15 @@ if __name__ == '__main__':
         #     path_reducing.extend(result[1:])
         #     kanban_path.next_sector(path_reducing)
 
+    # Legal Torpedo
+    legal_torpedo = LegalTorpedo(None)
+    legal_torpedo.set_up(REDUCE_MAP)
+
     game_board[MY_ID] = Board(game_board[MY_ID])
+    game_board[MY_ID].legal_torpedo = legal_torpedo
 
     kanban_opp = StalkAndTorpedo(None)
-    kanban_opp.set_up(TREASURE_MAP)
+    kanban_opp.set_up( (1,2,3,4,5,6,7,8,9) , TREASURE_MAP)
 
     kanban_mine = MineAndTrigger(None)
     lambda_n = lambda t1, m1 : '.' if t1 == '.' and m1 == '.' else ' '

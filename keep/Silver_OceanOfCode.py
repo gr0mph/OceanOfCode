@@ -315,28 +315,30 @@ class PathSolving:
 
     def solve_sector(self,next_sector):
         save = []
-        hamilton_find = False
         max_find = False
         first_find = False
-
+        save_type = 0
         for type, path in self.solve(next_sector):
             if type == k_PATH_HAMILTON :
-                hamilton_find = True
+                save_type = type
                 save = path
                 break
 
             if type == k_PATH_MAX :
                 max_find = True
+                save_type = type
                 save = copy.copy(path)
 
             if max_find == False and type == k_PATH_FIRST :
                 first_find = True
+                save_type = type
                 save = copy.copy(path)  # This data is ephemerate
 
             if max_find == False and first_find == False and type == k_PATH_LAST :
+                save_type = type
                 save = copy.copy(path)  # This data is ephemerate
 
-        return save
+        return save_type, save
 
     def coord_random(self):
         node = random.choice(list(self.legal))
@@ -1220,12 +1222,20 @@ class ObserverQueue():
 
         success = False
 
-        for instance in self.observer:
+        to_detach = {}
+        for i1,instance in enumerate(self.observer):
 
+            print(instance,file=sys.stderr)
             success = instance.notify_else(submarine,kanban_mine,kanban_opp)
 
             if success == False :
-                self.detach(instance)
+                to_detach[i1] = instance
+
+        for i1,instance in to_detach.items():
+            print(instance,file=sys.stderr)
+            print(len(self.observer),file=sys.stderr)
+
+            self.observer.remove(instance)
 
     def update(self,submarine,kanban_opp,kanban_mine):
         for instance in self.observer:
@@ -1275,10 +1285,12 @@ if __name__ == '__main__':
 
         elif sector_next == -1:
             k_next_tuple = SECTOR_TRANSIT[previous_sector]
-            result = kanban_path.solve_sector(k_next_tuple)
+            type, result = kanban_path.solve_sector(k_next_tuple)
             path_reducing.extend(result[1:])
             kanban_path.next_sector(path_reducing)
-            if previous_sector_a == 0:
+            if type == k_PATH_LAST :
+                sector_next = 0
+            elif previous_sector_a == 0:
                 previous_sector = previous_sector_a = sector(path_reducing[-1])
             else :
                 previous_sector = previous_sector_b = sector(path_reducing[-1])
@@ -1290,9 +1302,11 @@ if __name__ == '__main__':
         else :
             sector_next = next(iter_sector_reducing)
             print("Sector next: {}".format(sector_next),file=sys.stderr)
-            result = kanban_path.solve_sector([sector_next])
+            type, result = kanban_path.solve_sector([sector_next])
             path_reducing.extend(result[1:])
             kanban_path.next_sector(path_reducing)
+            if type == k_PATH_LAST :
+                sector_next = 0
 
     game_board[MY_ID] = Board(game_board[MY_ID])
 
