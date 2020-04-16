@@ -17,11 +17,19 @@ k_STATE_AGENT_SEARCHING = 2
 k_STATE_AGENT_MINING = 3
 k_STATE_AGENT_WARING = 4
 
+print_agent = {
+k_STATE_AGENT_STARTING: 'k_STATE_AGENT_STARTING',
+k_STATE_AGENT_DISCRETE: 'k_STATE_AGENT_DISCRETE',
+k_STATE_AGENT_SEARCHING: 'k_STATE_AGENT_SEARCHING',
+k_STATE_AGENT_MINING: 'k_STATE_AGENT_MINING',
+k_STATE_AGENT_WARING: 'k_STATE_AGENT_WARING'
+}
+
 STATE_MOVE=[
 [ 'SILENCE' , 'TORPEDO' , 'MINE' , 'SONAR' ],
-[ 'SILENCE' , 'MINE' , 'SONAR' , 'TORPEDO' ],
-[ 'SONAR' , 'MINE' , 'TORPEDO' , 'SILENCE' ],
-[ 'MINE' , 'TORPEDO' , 'SILENCE' , 'SONAR' ],
+[ 'SILENCE' , 'MINE' , 'TORPEDO' , 'SONAR' ],
+[ 'SILENCE' , 'SONAR' , 'MINE' , 'TORPEDO' ],
+[ 'MINE' , 'SILENCE' , 'TORPEDO' , 'SONAR' ],
 [ 'TORPEDO' , 'MINE' , 'SILENCE' , 'SONAR' ],
 ]
 PREVIOUS_SONAR = 0
@@ -75,10 +83,10 @@ def t_check_map(TREASURE_MAP):
 DEEP = 11
 DEEP_SILENCE = 14 #26
 DEEP_SILENCE2 = 31
-SEARCH_OPP_TORPEDO = 7
+SEARCH_OPP_TORPEDO = 5
 SEARCH_OPP_TORPEDO_MIN = 3
-SEARCH_OPP_TRIGGER = 7
-SEARCH_OPP_TRIGERR_LOTS = 17
+SEARCH_OPP_TRIGGER = 3
+SEARCH_OPP_TRIGGER_LOT = 11
 
 class Node:
 
@@ -854,7 +862,9 @@ READ_COMMAND = [
 ( 'SURFACE' , StalkAndTorpedo.read_surface2 ),
 ( 'TORPEDO' , StalkAndTorpedo.read_torpedo ),
 ( 'SONAR' , None ),
-( 'SILENCE' , StalkAndTorpedo.read_silence2 )
+( 'SILENCE' , StalkAndTorpedo.read_silence2 ),
+( 'MINE' , None ),
+( 'TRIGGER' , None ),
 ]
 
 MINE_MAP = []
@@ -883,7 +893,6 @@ MINE_MAP.append(list(' . .  . .  . . '))
 MINE_MAP.append(list('  .    .    .  '))
 MINE_MAP.append(list(' . .  . .  . . '))
 MINE_MAP.append(list('               '))
-
 
 class Point():
 
@@ -966,8 +975,11 @@ class Board(Submarine):
         self.turn = 0
         self.x , self.y , self.life = 0, 0, 6
         self.torpedo, self.sonar, self.silence, self.mine = 0, 0, 0, 0
+
         self.need_surface = False
         self.legal_torpedo = None
+        self.unknow_opp = True
+        self.nearest = False
 
         if clone is not None:
             self.turn = clone.turn + 1
@@ -976,6 +988,8 @@ class Board(Submarine):
             self.silence, self.mine = clone.silence, clone.mine
             self.need_surface = clone.need_surface
             self.legal_torpedo = clone.legal_torpedo # Only not lost link
+            self.unknow_opp = clone.unknow_opp
+            self.nearest = clone.nearest
 
     def __str__(self):
         return '({},{})'.format(self.x,self.y)
@@ -1053,6 +1067,20 @@ def square2(mine,my_board,opp_board):
 
     return False
 
+def average_x( triple_x , obj1 ):
+    min_x, ave_x, max_x = triple_x
+    min_x = min(min_x, obj1.x)
+    max_x = max(max_x, obj1.x)
+    ave_x = ave_x + obj1.x
+    return (min_x, ave_x, max_x)
+
+def average_y( triple_y , obj1 ):
+    min_y, ave_y, max_y = triple_y
+    min_y = min(min_y, obj1.y)
+    max_y = max(max_y, obj1.y)
+    ave_y = ave_y + obj1.y
+    return (min_y, ave_y, max_y)
+
 def path_solving(game_board,puzzle):
     puzzle.start = game_board[MY_ID].y , game_board[MY_ID].x
 
@@ -1082,6 +1110,7 @@ BOARD_OBSERVER_TORPEDO = (
 class TorpedoObserver():
 
     def __init__(self,clone):
+        self.me = True
         self.dict_torpedo = {}
         for y_drow, x_dcol in BOARD_OBSERVER_TORPEDO:
             self.dict_torpedo[(y_drow, x_dcol)] = 0
@@ -1103,13 +1132,13 @@ class TorpedoObserver():
         else :
             y_diff = k_board_opp.y - submarine.y
             x_diff = k_board_opp.x - submarine.x
-            print("FIND TORPEDO diff {},{} opp {},{} me {},{}".format(
-                x_diff,y_diff,k_board_opp.x,k_board_opp.y,submarine.x,submarine.y),file=sys.stderr)
+            #print("FIND TORPEDO diff {},{} opp {},{} me {},{}".format(
+            #    x_diff,y_diff,k_board_opp.x,k_board_opp.y,submarine.x,submarine.y),file=sys.stderr)
 
             if (y_diff,x_diff) in self.dict_torpedo:
-                print("FIND TORPEDO {},{}".format(x_diff,y_diff),file=sys.stderr)
+                #print("FIND TORPEDO {},{}".format(x_diff,y_diff),file=sys.stderr)
                 self.dict_torpedo[(y_diff,x_diff)] += 6
-                print("DICT TORPEDO {}".format(self.dict_torpedo[(y_diff,x_diff)]),file=sys.stderr)
+                #print("DICT TORPEDO {}".format(self.dict_torpedo[(y_diff,x_diff)]),file=sys.stderr)
 
             for y_drow, x_dcol in OBSERVER_TORPEDO:
 
@@ -1120,7 +1149,9 @@ class TorpedoObserver():
                 if (y1_,x1_) not in submarine.legal_torpedo.legal :
                     continue
 
-                if (y_diff_drow,x_diff_dcol) in self.dict_torpedo:
+                if (y_diff_drow,x_diff_dcol) in self.dict_torpedo :
+                    if self.dict_torpedo[(y_diff_drow,x_diff_dcol)] == 0 and distance == 5 :
+                        continue
                     self.dict_torpedo[(y_diff_drow,x_diff_dcol)] += 1
         return True
 
@@ -1128,7 +1159,7 @@ class TorpedoObserver():
         y_drow,x_dcol = max(self.dict_torpedo, key = self.dict_torpedo.get)
 
         if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
-            print("ELSE {} {} SCORE {}".format(x_dcol,y_drow, self.dict_torpedo[(y_drow,x_dcol)]),file=sys.stderr)
+            #print("ELSE {} {} SCORE {}".format(x_dcol,y_drow, self.dict_torpedo[(y_drow,x_dcol)]),file=sys.stderr)
             y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
             submarine.write_torpedo(x_col,y_row)
             submarine.torpedo = 3
@@ -1142,13 +1173,11 @@ class TorpedoObserver():
         k_coord = self.torpedo
         y_torpedo, x_torpedo = k_coord
 
-        if submarine.torpedo == 3 :
+        if submarine.torpedo == 0 :
             # Torpedo has failed
             print("Torpedo fail: {} --> no update".format(self),file=sys.stderr)
-            return
-
-        print("torpedo_check lost life {} nb observer check {}".format(
-        self.lost_life,self.nb_observer_check),file=sys.stderr)
+            print("Len Kanban Opp: {}".format(len(kanban_opp.inp)),file=sys.stderr)
+            return False
 
         if self.lost_life == 0:
             all_set = set()
@@ -1159,7 +1188,9 @@ class TorpedoObserver():
 
             for board,stalk in kanban_opp.inp:
                 board_coord = board.y, board.x
+                print("Board Check : {} {}".format(board.x,board.y),file=sys.stderr)
                 if board_coord not in all_set:
+                    print("Not Touch:  {} {}".format(board.x,board.y),file=sys.stderr)
                     kanban_opp.out.add( (board,stalk) )
 
             return True
@@ -1175,10 +1206,10 @@ class TorpedoObserver():
                 for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
-                        print("torpedo check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        #print("torpedo check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
                         kanban_opp.out.add( (board,stalk) )
-                    else:
-                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                    #else:
+                    #    print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
 
 
                 return True
@@ -1186,15 +1217,15 @@ class TorpedoObserver():
             elif self.lost_life == 2:
                 all_set = set()
                 all_set.add(k_coord)
-                print(k_coord,file=sys.stderr)
+                #print(k_coord,file=sys.stderr)
 
                 for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
-                        print("torpedo check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        #print("torpedo check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
                         kanban_opp.out.add( (board,stalk) )
-                    else:
-                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                    #else:
+                    #    print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
 
                 return True
         return False
@@ -1205,6 +1236,7 @@ class TriggerObserver():
 
     def __init__(self,clone):
         #
+        self.me = True
         self.dict_mine = {}
         self.trigger = (-1,-1)
 
@@ -1252,8 +1284,8 @@ class TriggerObserver():
         k_coord = self.trigger
         y_torpedo, x_torpedo = k_coord
 
-        print("trigger_check lost life {} nb observer check {}".format(
-        self.lost_life,self.nb_observer_check),file=sys.stderr)
+        #print("trigger_check lost life {} nb observer check {}".format(
+        #self.lost_life,self.nb_observer_check),file=sys.stderr)
 
         if self.lost_life == 0:
             all_set = set()
@@ -1280,10 +1312,10 @@ class TriggerObserver():
                 for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
-                        print("torpedo check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        #print("torpedo check MAYBE: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
                         kanban_opp.out.add( (board,stalk) )
-                    else:
-                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                    #else:
+                    #    print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
 
 
                 return True
@@ -1291,19 +1323,61 @@ class TriggerObserver():
             elif self.lost_life == 2:
                 all_set = set()
                 all_set.add(k_coord)
-                print(k_coord,file=sys.stderr)
+                #print(k_coord,file=sys.stderr)
 
                 for board,stalk in kanban_opp.inp:
                     board_coord = board.y, board.x
                     if board_coord in all_set:
-                        print("torpedo check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                        #print("torpedo check YES: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
                         kanban_opp.out.add( (board,stalk) )
-                    else:
-                        print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
+                    #else:
+                    #    print("torpedo check NO: ({},{})".format(board.x,board.y),end="....",file=sys.stderr)
 
                 return True
         return False
 
+class SonarObserver():
+
+    def __init__(self,clone):
+        #
+        self.nb_sector = [ 0 ] * 10
+        self.sonar = 0
+        pass
+
+    def __str__(self):
+        sonar = self.sonar
+        return f'Sonar {sonar}'
+
+    def reset(self):
+        self.nb_sector = [ 0 ] * 10
+        self.sonar = 0
+        pass
+
+    def notify_iter(self,submarine,kanban_mine,k_board_opp,k_stalk_opp):
+        # TODO
+        self.nb_sector[sector(k_board_opp)] += 1
+        return True
+
+    def notify_else(self,submarine,kanban_mine,kanban_opp):
+        m = max(self.nb_sector)
+        nb_solution = 0
+        # Check One solution or Two solution,etc.
+        for i1, j1 in enumerate(self.nb_sector):
+            if j1 == 0 :
+                continue
+            nb_solution += 1
+            if j1 == m :
+                self.sonar = i1
+
+        if nb_solution > 1 :
+            submarine.write_sonar(self.sonar)
+        else :
+            self.reset()
+        return False
+
+    def notify_check(self,submarine,kanban_mine,kanban_opp):
+        print("SonarObserver notify check",file=sys.stderr)
+        return False
 
 class ObserverQueue():
 
@@ -1325,42 +1399,78 @@ class ObserverQueue():
         self.observer.clear()
         self.lost_life = 0
 
-    def iterator(self,submarine,kanban_opp,kanban_mine):
+    def iterator(self,submarine_mine,kanban_opp,kanban_mine):
         length = len(kanban_opp.inp)
+
+        min_x, ave_x, max_x = 14, 0, 0
+        min_y, ave_y, max_y = 14, 0, 0
+
+        i1 = 0
 
         for k_board_opp, k_stalk_opp in kanban_opp.inp:
 
             instance, success = None, False
             for instance in self.observer:
-                success = instance.notify_iter(submarine,kanban_mine,k_board_opp,k_stalk_opp)
+                success = instance.notify_iter(submarine_mine,kanban_mine,k_board_opp,k_stalk_opp)
+
+            min_x, ave_x, max_x = average_x( (min_x, ave_x, max_x), k_board_opp )
+            min_y, ave_y, max_y = average_y( (min_y, ave_y, max_y), k_board_opp )
+
+            print("({},{}) _ ".format(k_board_opp.x,k_board_opp.y),file=sys.stderr,end="")
+            i1 += 1
+            if i1 == 5 :
+                print("",file=sys.stderr)
+                i1 = 0
+
+        print("",file=sys.stderr)
+
+        ave_x = ave_x // len(kanban_opp.inp)
+        ave_y = ave_y // len(kanban_opp.inp)
+
+        check_confined = (max_x - min_x) + (max_y - min_y)
+        submarine_mine.unknow_opp = False if check_confined <= 8 else True
+        print("Check confined {} max ({},{}) min ({},{}) diff ({},{})".format(
+            check_confined, max_x,max_y,min_x,min_y,(max_x-min_x),(max_y-min_y)),file=sys.stderr)
+
+        check_nearest = abs(ave_x - submarine_mine.x) + abs(ave_y - submarine_mine.y)
+        print("Check nearest {} me ({},{}) average ({},{})".format(
+            check_nearest, submarine_mine.x, submarine_mine.y, ave_x, ave_y), file=sys.stderr)
+        submarine_mine.nearest = True if check_nearest <= 7 else False
 
         success = False
 
         to_detach = {}
         for i1,instance in enumerate(self.observer):
 
-            print(instance,file=sys.stderr)
-            success = instance.notify_else(submarine,kanban_mine,kanban_opp)
+            #print(instance,file=sys.stderr)
+            success = instance.notify_else(submarine_mine,kanban_mine,kanban_opp)
 
             if success == False :
                 to_detach[i1] = instance
 
         for i1,instance in to_detach.items():
-            print(instance,file=sys.stderr)
-            print(len(self.observer),file=sys.stderr)
+            #print(instance,file=sys.stderr)
+            #print(len(self.observer),file=sys.stderr)
 
             self.observer.remove(instance)
 
 
-    def update(self,submarine,kanban_opp,kanban_mine):
+    def update(self,submarine_opp,submarine_mine,kanban_opp,kanban_mine):
         for instance in self.observer:
-            instance.lost_life = self.lost_life
-            instance.nb_observer_check = self.nb_observer_check
-            success = instance.notify_check(submarine,kanban_mine,kanban_opp)
-            if success == False :
-                pass
-            else :
-                kanban_opp = StalkAndTorpedo(kanban_opp)
+            if instance.me == True :
+                instance.lost_life = self.lost_life
+                instance.nb_observer_check = self.nb_observer_check
+                success = instance.notify_check(submarine_mine,kanban_mine,kanban_opp)
+                if success == False :
+                    pass
+                else :
+                    kanban_opp = StalkAndTorpedo(kanban_opp)
+
+                    # DEBUG
+                    print("DEBUG",file=sys.stderr)
+                    for b1, s1 in kanban_opp.inp:
+                        print(b1,file=sys.stderr)
+
 
         # Remove observer
         self.reset()
@@ -1410,21 +1520,24 @@ class StrategyStarting():
         self.iter_sector_reducing, self.sector_next = None, -1
         self.turn = 0
         self.agent = k_STATE_AGENT_STARTING
+        self.torpedo_obs = None
+        self.trigger_obs = None
+        self.sonar_obs = None
         pass
 
     def set_up(self,kanban_path,TREASURE_MAP):
-        print("TREASURE_MAP",file=sys.stderr)
-        for t_r in TREASURE_MAP:
-            print(t_r,file=sys.stderr)
+        #print("TREASURE_MAP",file=sys.stderr)
+        #for t_r in TREASURE_MAP:
+        #    print(t_r,file=sys.stderr)
 
         kanban_path.set_up(TREASURE_MAP)
         kanban_path.update()
 
         REDUCE_MAP = kanban_path.grid
 
-        print("REDUCE_MAP",file=sys.stderr)
-        for t_r in REDUCE_MAP:
-            print(t_r,file=sys.stderr)
+        #print("REDUCE_MAP",file=sys.stderr)
+        #for t_r in REDUCE_MAP:
+        #    print(t_r,file=sys.stderr)
 
         kanban_path.update_sector()
 
@@ -1464,7 +1577,7 @@ class StrategyStarting():
 
         else :
             self.sector_next = next(self.iter_sector_reducing)
-            print("Sector next: {}".format(self.sector_next),file=sys.stderr)
+            #print("Sector next: {}".format(self.sector_next),file=sys.stderr)
             type, result = kanban_path.solve_sector([self.sector_next])
             path_reducing.extend(result[1:])
             kanban_path.next_sector(path_reducing)
@@ -1489,21 +1602,30 @@ class StrategyStarting():
 
         else :
             distance, p1_next = planning.__next__()
-            print(distance,file=sys.stderr)
+            #print(distance,file=sys.stderr)
             if distance == 0 :
-                print("NEED SURFACE",file=sys.stderr)
+                #print("NEED SURFACE",file=sys.stderr)
                 submarine.need_surface = True
                 #submarine.write_surface()
             return (False, p1_next)
+
+    def selection(self,submarine_opp, submarine_mine, kanban_opp, kanban_mine, observer):
+        return
 
 class StrategyDiscrete():
 
     def __init__(self,clone):
         self.turn = 0
         self.agent = k_STATE_AGENT_DISCRETE
+        self.torpedo_obs = None
+        self.trigger_obs = None
+        self.sonar_obs = None
 
         if clone is not None :
             self.turn = clone.turn
+            self.torpedo_obs = clone.torpedo_obs
+            self.trigger_obs = clone.trigger_obs
+            self.sonar_obs = clone.sonar_obs
 
     def movement(self, submarine, kanban_path, planning):
         self.turn += 1
@@ -1532,32 +1654,105 @@ class StrategyDiscrete():
                 #submarine.write_surface()
             return (False, p1_next)
 
+    def selection(self,submarine_opp, submarine_mine, kanban_opp, kanban_mine, observer):
+
+        # Is there mine ?
+        nb_mine = len(kanban_mine.minefield)
+
+        # Reflexion about TRIGGER
+        if submarine_mine.unknow_opp == False and nb_mine > 0 :
+            observer.attach(self.trigger_obs)
+
+        elif submarine_mine.nearest == True and nb_mine > SEARCH_OPP_TRIGGER :
+            observer.attach(self.trigger_obs)
+
+        elif nb_mine > SEARCH_OPP_TRIGGER_LOT :
+            observer.attach(self.trigger_obs)
+
+        # Reflexion about TORPEDO
+
+        # Reflexion about SONAR
+        if submarine_mine.sonar == 0 :
+            observer.attach(self.sonar_obs)
+
 class StrategySearching():
 
     def __init__(self,clone):
         self.turn = 0
         self.agent = k_STATE_AGENT_SEARCHING
+        self.torpedo_obs = None
+        self.trigger_obs = None
+        self.sonar_obs = None
 
         if clone is not None :
             self.turn = clone.turn
+            self.torpedo_obs = clone.torpedo_obs
+            self.trigger_obs = clone.trigger_obs
+            self.sonar_obs = clone.sonar_obs
+
 
     def movement(self, submarine, kanban_path, planning):
-        self.turn += 1
+        if submarine.silence == 0 and submarine.sonar == 0 :
+            distance, p1_next = planning.__next__()
+            if distance == 0 :
+                submarine.need_surface = True
+                #submarine.write_surface()
+                return (False, p1_next)
 
-        distance, p1_next = planning.__next__()
-        if distance == 0 :
-            #submarine.write_surface()
-            submarine.need_surface = True
+            y_row, x_col = p1_next.y, p1_next.x
+            dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
+            submarine.y, submarine.x = y_row, x_col
+            submarine.write_silence(dir,1)
 
-        return (False, p1_next)
+            distance, p1_next = planning.__next__()
+            if distance == 0 :
+                submarine.need_surface = True
+            return (True, p1_next)
+
+        else :
+            distance, p1_next = planning.__next__()
+            if distance == 0 :
+                submarine.need_surface = True
+                #submarine.write_surface()
+            return (False, p1_next)
+
+    def selection(self,submarine_opp, submarine_mine, kanban_opp, kanban_mine, observer):
+
+        # Is there mine ?
+        nb_mine = len(kanban_mine.minefield)
+
+        # Reflexion about TRIGGER
+        if submarine_mine.unknow_opp == False and nb_mine > 0 :
+            observer.attach(self.trigger_obs)
+
+        elif submarine_mine.nearest == True and nb_mine > SEARCH_OPP_TRIGGER :
+            observer.attach(self.trigger_obs)
+
+        elif nb_mine > SEARCH_OPP_TRIGGER_LOT :
+            observer.attach(self.trigger_obs)
+
+        # Reflexion about TORPEDO
+
+        # Reflexion about SONAR
+        if submarine_mine.sonar == 0 :
+            observer.attach(self.sonar_obs)
+        pass
 
 class StrategyMining():
 
     def __init__(self, clone):
         self.turn = 0
         self.agent = k_STATE_AGENT_MINING
+        self.torpedo_obs = None
+        self.trigger_obs = None
+        self.sonar_obs = None
+
         if clone is not None :
             self.turn = clone.turn
+            self.torpedo_obs = clone.torpedo_obs
+            self.trigger_obs = clone.trigger_obs
+            self.sonar_obs = clone.sonar_obs
+
 
     def movement(self, submarine, kanban_path, planning):
         # In case of MINING and TORPEDO is full
@@ -1586,13 +1781,46 @@ class StrategyMining():
 
             return (False, p1_next)
 
+    def selection(self,submarine_opp, submarine_mine, kanban_opp, kanban_mine, observer):
+
+        # Is there mine ?
+        nb_mine = len(kanban_mine.minefield)
+
+        # Reflexion about TRIGGER
+        if submarine_mine.unknow_opp == False and nb_mine > 0 :
+            observer.attach(self.trigger_obs)
+
+        elif submarine_mine.nearest == True and nb_mine > 0 :
+            observer.attach(self.trigger_obs)
+
+        elif nb_mine > SEARCH_OPP_TRIGGER_LOT :
+            observer.attach(self.trigger_obs)
+
+        # Reflexion about TORPEDO
+        if submarine_mine.torpedo == 0 :
+            observer.attach(self.torpedo_obs)
+
+        # Reflexion about SONAR
+        #if submarine_mine.sonar == 0 :
+        #    _observer.attach(self.sonar_obs)
+        pass
+
+
 class StrategyWaring():
 
     def __init__(self, clone):
         self.turn = 0
         self.agent = k_STATE_AGENT_WARING
+        self.torpedo_obs = None
+        self.trigger_obs = None
+        self.sonar_obs = None
+
         if clone is not None :
             self.turn = clone.turn
+            self.torpedo_obs = clone.torpedo_obs
+            self.trigger_obs = clone.trigger_obs
+            self.sonar_obs = clone.sonar_obs
+
 
     def movement(self, submarine, kanban_path, planning):
         # In case of MINING and TORPEDO is full
@@ -1622,10 +1850,27 @@ class StrategyWaring():
 
             return (False, p1_next)
 
+    def selection(self,submarine_opp, submarine_mine, kanban_opp, kanban_mine, observer):
+
+        # Is there mine ?
+        nb_mine = len(kanban_mine.minefield)
+
+        # Reflexion about TRIGGER
+        if nb_mine > 0 :
+            observer.attach(self.trigger_obs)
+
+        # Reflexion about TORPEDO
+        if submarine_mine.torpedo == 0 :
+            observer.attach(self.torpedo_obs)
+
+        # Reflexion about SONAR
+        if submarine_mine.sonar == 0 :
+            observer.attach(self.sonar_obs)
+        pass
 
 if __name__ == '__main__':
     read_map()
-    t_check_map(TREASURE_MAP)
+    #t_check_map(TREASURE_MAP)
 
     # kanban_path  = PathSolving(None)
     # kanban_path.set_up(TREASURE_MAP)
@@ -1723,20 +1968,29 @@ if __name__ == '__main__':
     # From TI observing
     torpedo_obs = TorpedoObserver(None)
     trigger_obs = TriggerObserver(None)
+    torpedo_opp = TorpedoObserver(None)
+    torpedo_opp.me = False
+    trigger_opp = TriggerObserver(None)
+    trigger_opp.me = False
+    sonar_obs = SonarObserver(None)
+
     _observer = ObserverQueue(None)
     # End from TI observing
 
-    opp_unknow_me = True
-    me_unknow_opp = True
-    nearest = False
+    g_strategy_state.torpedo_obs = torpedo_obs
+    g_strategy_state.trigger_obs = trigger_obs
+    g_strategy_state.sonar_obs = sonar_obs
 
     while True:
-        print("TURN {}".format(turn),file=sys.stderr)
+
+        #print("TURN {}".format(turn),file=sys.stderr)
         game_board[MY_ID] = Board(game_board[MY_ID])
         game_board[OPP_ID] = Board(game_board[OPP_ID])
 
+        MY_LOST_LIFE = game_board[MY_ID].life
         OPP_LOST_LIFE = game_board[OPP_ID].life
         update(game_board[MY_ID],game_board[OPP_ID])
+        MY_LOST_LIFE -= game_board[MY_ID].life
         OPP_LOST_LIFE -= game_board[OPP_ID].life
 
         p1_next = None
@@ -1785,24 +2039,21 @@ if __name__ == '__main__':
         _, p1_next = g_strategy_state.movement(game_board[MY_ID], kanban_path, kanban_plan)
 
         #t_check_map(game_board[MY_ID].treasure_map)
-        print("Position (y:{},x:{})".format(game_board[MY_ID].y,game_board[MY_ID].x),file=sys.stderr)
+        #print("Position (y:{},x:{})".format(game_board[MY_ID].y,game_board[MY_ID].x),file=sys.stderr)
 
         sonar_result = input()
-        print(sonar_result, file=sys.stderr)
-        if PREVIOUS_SONAR != 0 :
-            kanban_opp.update_sonar(sonar_result,PREVIOUS_SONAR)
+        #print(sonar_result, file=sys.stderr)
+        if sonar_obs.sonar != 0 :
+            kanban_opp.update_sonar(sonar_result,sonar_obs.sonar)
             kanban_opp = StalkAndTorpedo(kanban_opp)
-            PREVIOUS_SONAR = 0
+            sonar_obs.reset()
+
+        #if PREVIOUS_SONAR != 0 :
+        #    kanban_opp.update_sonar(sonar_result,PREVIOUS_SONAR)
+        #    kanban_opp = StalkAndTorpedo(kanban_opp)
+        #    PREVIOUS_SONAR = 0
 
         opponent_orders = input()
-
-        if len(kanban_opp.inp) < 9 :
-            b1, _ = next(iter(kanban_opp.inp))
-            d1 = manhattan( game_board[MY_ID], b1)
-            nearest = True if d1 < 10 else False
-            me_unknow_opp = False
-        else :
-            me_unknow_opp = True
 
         _observer.lost_life = OPP_LOST_LIFE
         # TODO
@@ -1813,18 +2064,45 @@ if __name__ == '__main__':
         if "TORPEDO" in opponent_orders:
             # TODO: Can be improved
             _observer.nb_observer_check += 1
-            opp_unknow_me = False
-            nearest = True
+            if MY_LOST_LIFE > 0 :
+                game_board[OPP_ID].unknow_opp = False
+                game_board[OPP_ID].nearest = True
+
+            text, t1 = opponent_orders.split('|'), ''
+            t_list = [ n1 for n1 in text if "TORPEDO" in n1 ]
+            t_list = t_list[0].split(' ')
+
+            _,torpedo_opp_x,torpedo_opp_y = t_list[0], int(t_list[1]), int(t_list[2])
+            torpedo_opp.torpedo = (torpedo_opp_y, torpedo_opp_x)
+
+            _observer.attach(torpedo_opp)
+
+            #nearest = True
 
         if "TRIGGER" in opponent_orders:
             # TODO: Can be improved
             _observer.nb_observer_check += 1
+            if MY_LOST_LIFE > 0 :
+                game_board[OPP_ID].unknow_opp = False
 
-        print("Before UPDATE Lost Life {} Nb Observer {}".format(
-        _observer.lost_life,_observer.nb_observer_check),file=sys.stderr)
+            text, t1 = opponent_orders.split('|'), ''
+            t_list = [ n1 for n1 in text if "TRIGGER" in n1 ]
+            t_list = t_list[0].split(' ')
 
-        kanban_opp = _observer.update(game_board[MY_ID],kanban_opp,kanban_mine)
+            _,trigger_opp_x,trigger_opp_y = t_list[0], int(t_list[1]), int(t_list[2])
+            torpedo_opp.torpedo = (trigger_opp_y, trigger_opp_x)
+
+            _observer.attach(trigger_opp)
+
+
+        #print("Before UPDATE Lost Life {} Nb Observer {}".format(
+        #_observer.lost_life,_observer.nb_observer_check),file=sys.stderr)
+
+        kanban_opp = _observer.update(game_board[OPP_ID],game_board[MY_ID],kanban_opp,kanban_mine)
+
         _observer.reset()
+
+        print(opponent_orders,file=sys.stderr)
 
         for c1, f1, d1 in update_order(opponent_orders):
             if c1 == 'SILENCE':
@@ -1834,48 +2112,49 @@ if __name__ == '__main__':
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
+
         TURN_OPP_SILENCE = TURN_OPP_SILENCE + 1 if TURN_OPP_SILENCE != -1 else TURN_OPP_SILENCE
 
-        print("Kanban Board {} Torpedo {}".format(
-        len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
 
-        print("Need Fusion {} Turn Opp Silence {}".format(SILENCE_NEED_FUSION, TURN_OPP_SILENCE),file=sys.stderr)
+        #print("Need Fusion {} Turn Opp Silence {}".format(SILENCE_NEED_FUSION, TURN_OPP_SILENCE),file=sys.stderr)
 
         is_torpedo_attach = False
         if TURN_OPP_SILENCE != 1 :
 
-            if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
-                _observer.attach(trigger_obs)
+            g_strategy_state.selection(game_board[OPP_ID], game_board[MY_ID], kanban_opp, kanban_mine, _observer)
 
-            elif len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
-                print("TORPEDO SEARCH FIND",file=sys.stderr)
-                is_torpedo_attach = True
-                _observer.attach(torpedo_obs)
+            #if len(kanban_opp.inp) <= SEARCH_OPP_TRIGGER and len(kanban_mine.minefield) > 0 :
+            #    _observer.attach(trigger_obs)
+            #
+            #elif len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
+            #    #print("TORPEDO SEARCH FIND",file=sys.stderr)
+            #    is_torpedo_attach = True
+            #    _observer.attach(torpedo_obs)
+            #
+            #elif len(kanban_mine.minefield) > SEARCH_OPP_TRIGERR_LOTS :
+            #    #print("TRIGGER SEARCH IN LOT",file=sys.stderr)
+            #    _observer.attach(trigger_obs)
+            #
+            #if is_torpedo_attach == False:
+            #    if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO_MIN and game_board[MY_ID].torpedo == 0:
+            #        #print("TORPEDO FIND",file=sys.stderr)
+            #        _observer.attach(torpedo_obs)
 
-            elif len(kanban_mine.minefield) > SEARCH_OPP_TRIGERR_LOTS :
-                print("TRIGGER SEARCH IN LOT",file=sys.stderr)
-                _observer.attach(trigger_obs)
-
-            if is_torpedo_attach == False:
-                if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO_MIN and game_board[MY_ID].torpedo == 0:
-                    print("TORPEDO FIND",file=sys.stderr)
-                    _observer.attach(torpedo_obs)
+            #            if game_board[MY_ID].sonar == 0:
+            #    _observer.attach(sonar_obs)
 
             _observer.iterator(game_board[MY_ID],kanban_opp,kanban_mine)
 
 
-        if TURN_OPP_SILENCE != 1 :
+        #if TURN_OPP_SILENCE != 1 :
 
-            if len(kanban_opp.inp) <= 20 :
-                for s1,stalk1 in kanban_opp.inp :
-                    print(s1,file=sys.stderr)
 
-            if game_board[MY_ID].mine == 0 :
+        if game_board[MY_ID].mine == 0 :
 
-                orientation = kanban_mine.mine(game_board[MY_ID])
-                if orientation is not None :
-                    game_board[MY_ID].write_mine(orientation)
-                    game_board[MY_ID].mine = 3
+            orientation = kanban_mine.mine(game_board[MY_ID])
+            if orientation is not None :
+                game_board[MY_ID].write_mine(orientation)
+                game_board[MY_ID].mine = 3
 
             #if len(kanban_opp.inp) <= SEARCH_OPP_TORPEDO and game_board[MY_ID].torpedo == 0:
             #    for s1,_ in kanban_opp.inp :
@@ -1893,40 +2172,48 @@ if __name__ == '__main__':
             #             game_board[MY_ID].write_trigger(mine.x,mine.y)
             #             break
 
-            if len(kanban_opp.inp) >= DEEP_SILENCE2 and game_board[MY_ID].sonar == 0:
-                nb_sector = [ 0 ] * 10
-                for s1,_ in kanban_opp.inp :
-                    nb_sector[sector(s1)] += 1
-                m = max(nb_sector)
-                index = next(i for i, j in enumerate(nb_sector) if j == m)
-                PREVIOUS_SONAR = index
-                game_board[MY_ID].write_sonar(index)
+            #if len(kanban_opp.inp) >= DEEP_SILENCE2 and game_board[MY_ID].sonar == 0:
+            #    nb_sector = [ 0 ] * 10
+            #    for s1,_ in kanban_opp.inp :
+            #        nb_sector[sector(s1)] += 1
+            #    m = max(nb_sector)
+            #    index = next(i for i, j in enumerate(nb_sector) if j == m)
+            #    PREVIOUS_SONAR = index
+            #    game_board[MY_ID].write_sonar(index)
 
 
         if TURN_OPP_SILENCE == 2 and SILENCE_NEED_FUSION == 1 :
-            print("START silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
+            #print("START silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
             kanban_opp.silence_fusion()
-            kanban_opp = StalkAndTorpedo(kanban_opp)
-            print("END silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
 
+            kanban_opp = StalkAndTorpedo(kanban_opp)
+
+            #print("END silence_fusion len {}".format(len(kanban_opp.inp)),file=sys.stderr)
+
+
+        nearest = game_board[MY_ID].nearest
+        #if game_board[MY_ID].unknow_opp == False :
+        #    nearest = game_board[MY_ID].nearest
+        #else :
+        #    nearest = game_board[OPP_ID].nearest
 
         #state = update_state(state,turn,game_board[MY_ID],kanban_opp)
         if turn <= 15 :
             state = k_STATE_AGENT_STARTING
 
-        elif opp_unknow_me == True and me_unknow_opp == True :
+        elif game_board[MY_ID].unknow_opp == True and game_board[OPP_ID].unknow_opp == True :
             state = k_STATE_AGENT_DISCRETE
             g_strategy_state = StrategyDiscrete(g_strategy_state)
 
-        elif nearest == True :
+        elif game_board[MY_ID].nearest == True :
             state = k_STATE_AGENT_WARING
             g_strategy_state = StrategyWaring(g_strategy_state)
 
-        elif me_unknow_opp == True :
+        elif game_board[MY_ID].unknow_opp == True == True :
             state = k_STATE_AGENT_SEARCHING
             g_strategy_state = StrategySearching(g_strategy_state)
 
-        elif opp_unknow_me == True :
+        elif game_board[OPP_ID].unknow_opp == True :
             state = k_STATE_AGENT_DISCRETE
             g_strategy_state = StrategyDiscrete(g_strategy_state)
 
@@ -1934,7 +2221,12 @@ if __name__ == '__main__':
             state = k_STATE_AGENT_MINING
             g_strategy_state = StrategyMining(g_strategy_state)
 
+        print("Kanban Board {} Torpedo {}".format(
+        len(kanban_opp.inp),game_board[MY_ID].torpedo),file=sys.stderr)
 
+
+        print("Mode: {} Opp [{}] Me [{}] Nearest [{}]".format(
+            print_agent[state], not game_board[OPP_ID].unknow_opp, not game_board[MY_ID].unknow_opp, nearest),file=sys.stderr)
 
         text = update_agent(g_strategy_state.agent,game_board[MY_ID])
 
@@ -1945,7 +2237,7 @@ if __name__ == '__main__':
         game_board[MY_ID].write_move(dir,text)
 
         if game_board[MY_ID].need_surface == True:
-            print("ORDER NEED SURFACE",file=sys.stderr)
+            #print("ORDER NEED SURFACE",file=sys.stderr)
             game_board[MY_ID].write_surface()
             game_board[MY_ID].need_surface = False
 

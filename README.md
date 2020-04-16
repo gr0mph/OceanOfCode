@@ -8,7 +8,7 @@
 
 - [x] Create your own branch (for example dev_gr0mph) "It's me !"
 - [x] Write your test (for exemple under test folder)
-- [ ] Push your code
+- [x] Push your code
 
 **Merging**
 
@@ -54,8 +54,8 @@
 **Implement strategy**
 
 - [x] ***Easy*** Add Observer in last loop (Done for trigger and torpedo)
-- [ ] ***Easy*** Implement Design Pattern strategy (***In Progress***)
+- [x] ***Easy*** Implement Design Pattern strategy
 - [ ] ***Hard*** Implement Deep Q for strategy (what states...)
 
 **Objective**
-- [ ] Try to reach gold
+- [ ] Try to reach gold (***In progress***)
