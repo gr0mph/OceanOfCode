@@ -58,4 +58,6 @@
 - [ ] ***Hard*** Implement Deep Q for strategy (what states...)
 
 **Objective**
-- [ ] Try to reach gold (***In progress***)
+- [x] Try to reach gold (***In progress***)
+
+![](picture/league_silver_03.png) ![](picture/league_gold_03.png)
