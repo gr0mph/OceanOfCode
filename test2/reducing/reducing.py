@@ -15,9 +15,9 @@ from OceanOfCode import PathSolving
 # Global
 from OceanOfCode import EMPTY_SYMBOLS
 from OceanOfCode import DIRS
-from OceanOfCode import HAMILTON
-from OceanOfCode import FIRST
-from OceanOfCode import LAST
+from OceanOfCode import k_PATH_HAMILTON
+from OceanOfCode import k_PATH_FIRST
+from OceanOfCode import k_PATH_LAST
 from OceanOfCode import SECTOR_REDUCING
 from OceanOfCode import SECTOR_TRANSIT
 
@@ -163,7 +163,11 @@ class _reducing(unittest.TestCase):
         coord, me.last = next(iter(me.sector[5].items()))
         del me.sector[5][coord]
 
+        coord, me.last = next(iter(me.sector[previous_sector].items()))
+        del me.sector[5][coord]
+
         path_reducing = []
+        path_reducing.append(me.last)
         iter_sector_reducing, sector_next = None, -1
 
         # From true code
@@ -175,7 +179,7 @@ class _reducing(unittest.TestCase):
 
             elif sector_next == -1:
                 k_next_tuple = SECTOR_TRANSIT[previous_sector]
-                result = kanban_path.solve_sector(k_next_tuple)
+                type, result = kanban_path.solve_sector(k_next_tuple)
                 path_reducing.extend(result[1:])
                 kanban_path.next_sector(path_reducing)
                 if previous_sector_a == 0:
@@ -190,7 +194,7 @@ class _reducing(unittest.TestCase):
             else :
                 sector_next = next(iter_sector_reducing)
                 print("Sector next: {}".format(sector_next),file=sys.stderr)
-                result = kanban_path.solve_sector([sector_next])
+                type, result = kanban_path.solve_sector([sector_next])
                 path_reducing.extend(result[1:])
                 kanban_path.next_sector(path_reducing)
 
@@ -229,6 +233,7 @@ class _reducing(unittest.TestCase):
                     p1_backward = next(iter_backward)
                     print()
                     print("NEED SURFACE")
+                    break
 
 if __name__ == '__main__':
     unittest.main()

@@ -43,24 +43,3 @@ MINE_MAP.append(list(' . .  . .  . . '))
 MINE_MAP.append(list('  .    .    .  '))
 MINE_MAP.append(list(' . .  . .  . . '))
 MINE_MAP.append(list('               '))
-
-
-
-#for t in TREASURE_MAP:
-#    print(t)
-
-# TREASURE_MAP.append(list('xxxxxxxxxxxxx..'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxx.x'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))
-# TREASURE_MAP.append(list('xxxxxxxxxxxxxxx'))

@@ -17,9 +17,11 @@ from OceanOfCode import Board
 from OceanOfCode import HEIGHT
 from OceanOfCode import EMPTY_SYMBOLS
 from OceanOfCode import DIRS
-#from OceanOfCode import k_PATH_HAMILTON
-#from OceanOfCode import k_PATH_FIRST
-#from OceanOfCode import k_PATH_LAST
+from OceanOfCode import k_PATH_HAMILTON
+from OceanOfCode import k_PATH_FIRST
+from OceanOfCode import k_PATH_LAST
+from OceanOfCode import k_PATH_MAX
+
 from OceanOfCode import SECTOR_REDUCING
 from OceanOfCode import SECTOR_TRANSIT
 from OceanOfCode import MY_ID
@@ -77,18 +79,17 @@ class StrategyStarting():
         pass
 
     def set_up(self,kanban_path,TREASURE_MAP):
-        print("TREASURE_MAP",file=sys.stderr)
-        for t_r in TREASURE_MAP:
-            print(t_r,file=sys.stderr)
-
         kanban_path.set_up(TREASURE_MAP)
         kanban_path.update()
 
         REDUCE_MAP = kanban_path.grid
 
-        print("REDUCE_MAP",file=sys.stderr)
-        for t_r in REDUCE_MAP:
-            print(t_r,file=sys.stderr)
+        print()
+        print("TREASURE_MAP",end='\t')
+        print("REDUCE_MAP")
+        for t_r, m_r in zip(TREASURE_MAP, REDUCE_MAP):
+            print(''.join(t_r),end='\t')
+            print(''.join(m_r))
 
         kanban_path.update_sector()
 

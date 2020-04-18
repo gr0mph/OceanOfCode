@@ -105,7 +105,7 @@ class _observing(unittest.TestCase):
 
         # Initialize
         kanban_opp = StalkAndTorpedo(None)
-        kanban_opp.set_up(TREASURE_MAP)
+        kanban_opp.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
 
         for c1, f1, d1 in update_order('MOVE N|MOVE N'):
             if f1 is not None:
@@ -127,6 +127,10 @@ class _observing(unittest.TestCase):
         submarine_mine.y = 7
         submarine_mine.x = 7
 
+        submarine_opp = Board(None)
+        submarine_opp.y = 4
+        submarine_opp.x = 4
+
         # Serious thing
         trigger_obs = TriggerObserver(None)
 
@@ -134,7 +138,7 @@ class _observing(unittest.TestCase):
 
         # TURN 1
 
-        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        kanban_opp = _observer.update(submarine_opp,submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
         kanban_mine.mine(submarine_mine)
@@ -143,7 +147,7 @@ class _observing(unittest.TestCase):
 
         # TURN 2
 
-        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        kanban_opp = _observer.update(submarine_opp,submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
         submarine_mine.x = 12
@@ -157,7 +161,7 @@ class _observing(unittest.TestCase):
         print("Observer Torpedo {}".format(trigger_obs))
         print("Length {}".format(len(kanban_opp.inp)))
 
-        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        kanban_opp = _observer.update(submarine_opp,submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
         submarine_mine.x = 11
@@ -171,7 +175,7 @@ class _observing(unittest.TestCase):
         print("Observer Torpedo {}".format(trigger_obs))
         print("Length {}".format(len(kanban_opp.inp)))
 
-        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        kanban_opp = _observer.update(submarine_opp,submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
         submarine_mine.x = 3
@@ -185,7 +189,7 @@ class _observing(unittest.TestCase):
         print("Observer Torpedo {}".format(trigger_obs))
         print("Length {}".format(len(kanban_opp.inp)))
 
-        kanban_opp = _observer.update(submarine_mine,kanban_opp,kanban_mine)
+        kanban_opp = _observer.update(submarine_opp,submarine_mine,kanban_opp,kanban_mine)
         _observer.reset()
 
         submarine_mine.x = 7

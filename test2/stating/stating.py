@@ -17,7 +17,7 @@ from OceanOfCode import state
 
 # Function
 from OceanOfCode import update_agent
-from OceanOfCode import update_state
+#from OceanOfCode import update_state
 
 class FalseKanbanOpp():
 
@@ -57,7 +57,7 @@ class _stating(unittest.TestCase):
 
         print(state)
 
-    def test_agent(self):
+    def _agent(self):
         global state
         kanban_opp = FalseKanbanOpp(None)
         board = Board(None)
@@ -109,9 +109,10 @@ class _stating(unittest.TestCase):
         print(state)
         print(text)
 
-
-
-
+    def test_no(self):
+        print("===================================================")
+        print("== update state method has been replaced by code ==")
+        print("===================================================")
 
 if __name__ == '__main__':
     unittest.main()

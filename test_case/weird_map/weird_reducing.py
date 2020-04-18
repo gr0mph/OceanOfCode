@@ -12,16 +12,22 @@ from test_case.weird_map.test_weird_map import TRANSIT_MAP
 # Class
 from OceanOfCode import Node
 from OceanOfCode import PathSolving
+from OceanOfCode import StrategyStarting
+from OceanOfCode import Planning
+from OceanOfCode import Board
 
 # Global
 from OceanOfCode import EMPTY_SYMBOLS
 from OceanOfCode import DIRS
-from OceanOfCode import HAMILTON
-from OceanOfCode import FIRST
-from OceanOfCode import LAST
+from OceanOfCode import k_PATH_HAMILTON
+from OceanOfCode import k_PATH_FIRST
+from OceanOfCode import k_PATH_LAST
+from OceanOfCode import k_PATH_MAX
+
 from OceanOfCode import SECTOR_REDUCING
 from OceanOfCode import SECTOR_TRANSIT
-
+from OceanOfCode import MY_ID
+from OceanOfCode import GET_DIRS
 
 # Function
 from OceanOfCode import sector
@@ -67,21 +73,21 @@ class _reducing(unittest.TestCase):
         else:
             print("OKAY test2")
 
-    def test_big_solving(self):
-        for t_r in TREASURE_MAP:
-            print(''.join(t_r))
-        print()
+    def _big_solving(self):
 
         me = PathSolving(None)
         me.set_up(TREASURE_MAP)
         me.update()
 
-        for line1 in me.grid :
-            print(''.join(line1))
-        print()
-
         me.update_sector()
         REDUCE_MAP = me.grid
+
+        print()
+        print("TREASURE_MAP",end='\t')
+        print("REDUCE_MAP")
+        for t_r, m_r in zip(TREASURE_MAP, REDUCE_MAP):
+            print(''.join(t_r),end='\t')
+            print(''.join(m_r))
 
         # First node
         previous_sector = 5
@@ -154,6 +160,24 @@ class _reducing(unittest.TestCase):
                     print()
                     print("NEED SURFACE")
 
+    def test_weird(self):
+
+        g_strategy_state = StrategyStarting(None)
+        kanban_path  = PathSolving(None)
+        kanban_plan = Planning(None)
+        game_board = [None, None]
+        game_board[MY_ID] = Board(game_board[MY_ID])
+
+        REDUCE_MAP = copy.deepcopy(TREASURE_MAP)
+        kanban_plan.forward = g_strategy_state.set_up(kanban_path,REDUCE_MAP)
+        REDUCE_MAP = kanban_path.grid
+
+        print()
+        print("TREASURE_MAP",end='\t')
+        print("REDUCE_MAP")
+        for t_r, m_r in zip(TREASURE_MAP, REDUCE_MAP):
+            print(''.join(t_r),end='\t')
+            print(''.join(m_r))
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ import math
 import copy
 import random
 import time
+import gc
 
 TURN_OPP_SILENCE = -1
 
@@ -1359,6 +1360,7 @@ class StrategyStarting():
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
             submarine.y, submarine.x = y_row, x_col
             submarine.write_silence(dir,1)
+            submarine.silence = 6
 
             distance, p1_next = planning.__next__()
             return (True, p1_next)
@@ -1400,6 +1402,7 @@ class StrategyDiscrete():
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
             submarine.y, submarine.x = y_row, x_col
             submarine.write_silence(dir,1)
+            submarine.silence = 6
 
             distance, p1_next = planning.__next__()
             if distance == 0 :
@@ -1453,6 +1456,7 @@ class StrategySearching():
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
             submarine.y, submarine.x = y_row, x_col
             submarine.write_silence(dir,1)
+            submarine.silence = 6
 
             distance, p1_next = planning.__next__()
             if distance == 0 :
@@ -1508,6 +1512,7 @@ class StrategyMining():
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
             submarine.y, submarine.x = y_row, x_col
             submarine.write_silence(dir,1)
+            submarine.silence = 6
 
             distance, p1_next = planning.__next__()
             if distance == 0 :
@@ -1568,6 +1573,7 @@ class StrategyWaring():
             dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
             submarine.y, submarine.x = y_row, x_col
             submarine.write_silence(dir,1)
+            submarine.silence = 6
 
             distance, p1_next = planning.__next__()
             if distance == 0 :

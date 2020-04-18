@@ -6,7 +6,7 @@ from test2.test_main import TREASURE_MAP
 
 # From OceanOfCode
 # Class
-from OceanOfCode import HamiltonSolver
+#from OceanOfCode import HamiltonSolver
 from OceanOfCode import Submarine
 from OceanOfCode import Board
 
@@ -15,7 +15,7 @@ from OceanOfCode import STARTING_SYMBOLS
 from OceanOfCode import FINISHING_SYMBOLS
 from OceanOfCode import EMPTY_SYMBOLS
 from OceanOfCode import DIRS
-from OceanOfCode import DEEP
+#from OceanOfCode import DEEP
 from OceanOfCode import GET_DIRS
 
 import unittest
@@ -31,7 +31,7 @@ class _moving(unittest.TestCase):
         me.treasure_map = TREASURE_MAP
         puzzle = HamiltonSolver(me.treasure_map)
 
-    def test_first_position(self):
+    def _first_position(self):
         me = Board(None)
         me.treasure_map = TREASURE_MAP
         puzzle = HamiltonSolver(me.treasure_map)
@@ -63,6 +63,10 @@ class _moving(unittest.TestCase):
         me.write_move(dir,'TORPEDO')
         print(me.out)
 
+    def test_no(self):
+        print("===========================================================")
+        print("== HamiltonSolver class has been replaced by PathSolving ==")
+        print("===========================================================")
 
 if __name__ == '__main__':
     unittest.main()

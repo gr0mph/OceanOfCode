@@ -25,12 +25,12 @@ class _stalking(unittest.TestCase):
 
     def _set_up(self):
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
     def _read_move(self):
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
         read_move = StalkAndTorpedo.read_move
@@ -57,7 +57,7 @@ class _stalking(unittest.TestCase):
 
     def _read_surface(self):
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
 
         read_surface = StalkAndTorpedo.read_surface
 
@@ -75,7 +75,7 @@ class _stalking(unittest.TestCase):
 
     def _read_torpedo(self):
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
         read_torpedo = StalkAndTorpedo.read_torpedo
@@ -90,7 +90,7 @@ class _stalking(unittest.TestCase):
 
     def test_read_silence(self):
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
         read_torpedo = StalkAndTorpedo.read_torpedo
@@ -116,7 +116,7 @@ class _stalking(unittest.TestCase):
 
     def _small_read_and_update(self):
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
         for c1, f1, d1 in update_order('MOVE N'):
@@ -157,7 +157,7 @@ class _stalking(unittest.TestCase):
     def _na_read(self):
 
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
         for c1, f1, d1 in update_order('NA'):
@@ -168,7 +168,7 @@ class _stalking(unittest.TestCase):
             print(t_r)
 
         me = StalkAndTorpedo(None)
-        me.set_up(TREASURE_MAP)
+        me.set_up((1,2,3,4,5,6,7,8,9),TREASURE_MAP)
         print(len(me.inp))
 
         for c1, f1, d1 in update_order('MOVE N|SILENCE'):
@@ -184,9 +184,6 @@ class _stalking(unittest.TestCase):
                 me.update(f1,d1)
                 me = StalkAndTorpedo(me)
                 print(len(me.inp))
-
-
-
 
 
 if __name__ == '__main__':

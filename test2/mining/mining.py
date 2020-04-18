@@ -112,17 +112,18 @@ class _mining(unittest.TestCase):
         len(me.legal), len(me.minefield)))
 
     def test_filter(self):
-        print("4. START test_filter")
+        #print("4. START test_filter")
 
         lambda_n = lambda t1, m1 : '.' if t1 == '.' and m1 == '.' else ' '
         for i1 in range(15):
             MINE_MAP[i1] = [ lambda_n(t1,m1) for t1, m1 in zip(TREASURE_MAP[i1],MINE_MAP[i1]) ]
 
-        for t_r in TREASURE_MAP:
-            print(t_r)
-        for m_r in MINE_MAP:
-            print(m_r)
-
+        print()
+        print("TREASURE_MAP",end='\t')
+        print("MINE_MAP")
+        for t_r, m_r in zip(TREASURE_MAP, MINE_MAP):
+            print(''.join(t_r),end='\t')
+            print(''.join(m_r))
 
 if __name__ == '__main__':
     unittest.main()

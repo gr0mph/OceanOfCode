@@ -329,7 +329,7 @@ class _path_solver(unittest.TestCase):
         TREASURE_MAP = treasure_update(TREASURE_MAP,SELECT_MAP,s1)
         write_termios(TREASURE_MAP, len(TREASURE_MAP), 0)
 
-    def test_previous_7_hard_big_map(self):
+    def _previous_7_hard_big_map(self):
         print()
         global PUZZLE_GLOBAL
         global TREASURE_MAP

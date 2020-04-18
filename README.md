@@ -55,9 +55,13 @@
 
 **Implement strategy**
 
-- [x] ***Easy*** Add Observer in last loop (Done for trigger and torpedo)
+- [x] ***Easy*** Add Observer in last loop
 - [x] ***Easy*** Implement Design Pattern strategy
 - [ ] ***Hard*** Implement Deep Q for strategy (what states...)
 
 **Objective**
 - [x] Try to reach gold
+
+| Title   | URL                          |
+|:--------|:-----------------------------|
+| Awesome | [Link](resource/RESOURCE.md) |
