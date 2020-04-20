@@ -26,11 +26,11 @@ k_STATE_AGENT_WARING: 'k_STATE_AGENT_WARING'
 }
 
 STATE_MOVE=[
+[ 'SILENCE' , 'TORPEDO' , 'MINE' , 'SONAR' ],
 [ 'TORPEDO' , 'SILENCE' , 'MINE' , 'SONAR' ],
-[ 'SILENCE' , 'MINE' , 'SONAR' , 'TORPEDO' ],
 [ 'SILENCE' , 'SONAR' , 'MINE' , 'TORPEDO' ],
 [ 'MINE' , 'SILENCE' , 'TORPEDO' , 'SONAR' ],
-[ 'TORPEDO' , 'MINE' , 'SONAR' , 'SILENCE' ],
+[ 'TORPEDO' , 'MINE' , 'SILENCE' , 'SONAR' ],
 ]
 PREVIOUS_SONAR = 0
 
@@ -651,6 +651,13 @@ class StalkAndTorpedo():
             if distance <= 4 :
                 self.out.add( (board,stalk) )
 
+    def read_trigger(self,data):
+        x, y = int(data[0]), int(data[1])
+        point = Point(x,y)
+        for board,stalk in self.inp:
+            if not square(point,board):
+                self.out.add( (board,stalk) )
+
     def read_silence2(self,data):
         global SILENCE_NEED_FUSION
         inp = self.inp
@@ -727,7 +734,7 @@ READ_COMMAND = [
 ( 'SONAR' , None ),
 ( 'SILENCE' , StalkAndTorpedo.read_silence2 ),
 ( 'MINE' , None ),
-( 'TRIGGER' , None ),
+( 'TRIGGER' , StalkAndTorpedo.read_trigger ),
 ]
 
 MINE_MAP = []
@@ -823,6 +830,7 @@ class Board(Submarine):
         self.legal_torpedo = None
         self.unknow_opp = True
         self.nearest = False
+        self.delayed_torpedo = False
 
         if clone is not None:
             self.turn = clone.turn + 1
@@ -833,6 +841,7 @@ class Board(Submarine):
             self.legal_torpedo = clone.legal_torpedo # Only not lost link
             self.unknow_opp = clone.unknow_opp
             self.nearest = clone.nearest
+            self.delayed_torpedo = clone.delayed_torpedo
 
     def __str__(self):
         return '({},{})'.format(self.x,self.y)
@@ -965,15 +974,24 @@ class TorpedoObserver():
     def notify_else(self,submarine,kanban_mine,kanban_opp):
         y_drow,x_dcol = max(self.dict_torpedo, key = self.dict_torpedo.get)
 
-        if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
-            y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
-            submarine.write_torpedo(x_col,y_row)
-            submarine.torpedo = 3
-            self.torpedo = (y_row,x_col)
-            return True
-
-        else :
+        if submarine.torpedo == 0 :
+            if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
+                y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
+                submarine.write_torpedo(x_col,y_row)
+                submarine.torpedo = 3
+                self.torpedo = (y_row,x_col)
+                return True
             return False
+
+        elif submarine.torpedo == 1 :
+            if self.dict_torpedo[(y_drow,x_dcol)] > 0 :
+                y_row, x_col = submarine.y + y_drow, submarine.x + x_dcol
+                submarine.delayed_torpedo = True
+                self.torpedo = (y_row,x_col)
+                return True
+            return False
+
+        return False
 
     def notify_check(self,submarine,kanban_mine,kanban_opp):
         k_coord = self.torpedo
@@ -1059,6 +1077,10 @@ class TriggerObserver():
         mine = max(self.dict_mine, key = self.dict_mine.get,default=None)
 
         if mine == None :
+            return False
+
+        if submarine.unknow_opp == True :
+            # Has been uodate due to an opponent silence command
             return False
 
         if self.dict_mine[mine] > 0 :
@@ -1226,7 +1248,6 @@ class ObserverQueue():
         for i1,instance in to_detach.items():
             self.observer.remove(instance)
 
-
     def update(self,submarine_opp,submarine_mine,kanban_opp,kanban_mine):
         for instance in self.observer:
             if instance.me == True :
@@ -1355,14 +1376,27 @@ class StrategyStarting():
         self.turn += 1
 
         if submarine.silence == 0 :
-            distance, p1_next = planning.__next__()
-            y_row, x_col = p1_next.y, p1_next.x
-            dir = GET_DIRS[ (y_row - submarine.y, x_col - submarine.x)]
-            submarine.y, submarine.x = y_row, x_col
-            submarine.write_silence(dir,1)
-            submarine.silence = 6
+            previous_dir, previous_y_row, previous_x_col = None, submarine.y, submarine.x
+            length, y_row, x_col, p1_next = 0, 0, 0, None
 
-            distance, p1_next = planning.__next__()
+            while True :
+                distance, p1_next = planning.__next__()
+                y_row, x_col = p1_next.y, p1_next.x
+                dir = GET_DIRS[ (y_row - previous_y_row, x_col - previous_x_col)]
+
+                if length == 4 :
+                    break
+                elif previous_dir == None or previous_dir == dir :
+                    pass
+                else :
+                    break
+
+                length += 1
+                previous_dir, previous_y_row, previous_x_col = dir, y_row, x_col
+
+            submarine.y, submarine.x = previous_y_row, previous_x_col
+            submarine.write_silence(previous_dir,length)
+            submarine.silence = 6
             return (True, p1_next)
 
         else :
@@ -1424,6 +1458,11 @@ class StrategyDiscrete():
             observer.attach(self.trigger_obs)
 
         # Reflexion about TORPEDO
+        if len(kanban_opp.inp) == 1 and submarine_mine.torpedo == 0 :
+            b1, _ = next(iter(kanban_opp.inp))
+            d1 = manhattan(submarine_mine,b1)
+            if d1 <= 4 :
+                observer.attach(self.torpedo_obs)
 
         # Reflexion about SONAR
         if submarine_mine.unknow_opp == True and submarine_mine.sonar == 0 :
@@ -1446,6 +1485,7 @@ class StrategySearching():
 
 
     def movement(self, submarine, kanban_path, planning):
+
         if submarine.silence == 0 and submarine.sonar == 0 :
             distance, p1_next = planning.__next__()
             if distance == 0 :
@@ -1526,6 +1566,7 @@ class StrategyMining():
 
             return (False, p1_next)
 
+
     def selection(self,submarine_opp, submarine_mine, kanban_opp, kanban_mine, observer):
 
         nb_mine = len(kanban_mine.minefield)
@@ -1602,7 +1643,7 @@ class StrategyWaring():
             observer.attach(self.trigger_obs)
 
         # Reflexion about TORPEDO
-        if submarine_mine.torpedo == 0 :
+        if submarine_mine.torpedo == 0 or submarine_mine.torpedo == 1 :
             observer.attach(self.torpedo_obs)
 
         # Reflexion about SONAR
@@ -1728,6 +1769,9 @@ if __name__ == '__main__':
                 TURN_OPP_SILENCE = 0
 
             if f1 is not None:
+                if c1 == 'TRIGGER' and OPP_LOST_LIFE > 0 :
+                    continue
+
                 kanban_opp.update(f1,d1)
                 kanban_opp = StalkAndTorpedo(kanban_opp)
 
@@ -1735,11 +1779,12 @@ if __name__ == '__main__':
         TURN_OPP_SILENCE = TURN_OPP_SILENCE + 1 if TURN_OPP_SILENCE != -1 else TURN_OPP_SILENCE
 
         is_torpedo_attach = False
-        if TURN_OPP_SILENCE != 1 :
 
-            g_strategy_state.selection(game_board[OPP_ID], game_board[MY_ID], kanban_opp, kanban_mine, _observer)
+        #if TURN_OPP_SILENCE != 1 :
 
-            _observer.iterator(game_board[MY_ID],kanban_opp,kanban_mine)
+        g_strategy_state.selection(game_board[OPP_ID], game_board[MY_ID], kanban_opp, kanban_mine, _observer)
+
+        _observer.iterator(game_board[MY_ID],kanban_opp,kanban_mine)
 
         if game_board[MY_ID].mine == 0 :
 
@@ -1754,7 +1799,7 @@ if __name__ == '__main__':
 
         nearest = game_board[MY_ID].nearest
 
-        if turn <= 15 :
+        if turn <= 6 :
             state = k_STATE_AGENT_STARTING
 
         elif game_board[MY_ID].unknow_opp == True and game_board[OPP_ID].unknow_opp == True :
@@ -1792,6 +1837,11 @@ if __name__ == '__main__':
         if game_board[MY_ID].need_surface == True:
             game_board[MY_ID].write_surface()
             game_board[MY_ID].need_surface = False
+
+        if game_board[MY_ID].delayed_torpedo == True :
+            y_row, x_col = torpedo_obs.torpedo
+            game_board[MY_ID].write_torpedo(x_col,y_row)
+            game_board[MY_ID].delayed_torpedo = False
 
         turn += 1
         print(game_board[MY_ID].out)

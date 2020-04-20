@@ -25,7 +25,7 @@
 - [x] Create a simple Matrix depend of state path to choose best path.
 - [x] Check state of path function
 
-**Stalk and torpedo**
+**Stalk and Torpedo**
 
 - [x] Create a set of possible submarine
 - [x] On each turn update set and delete impossible Submarine
@@ -33,7 +33,7 @@
 - [x] Find the good submarine
 - [x] Torpedo it
 
-**Mining and triggering**
+**Mining and Triggering**
 
 - [x] Read rule of missile
 - [x] Add class to implement them
@@ -55,8 +55,8 @@
 
 **Implement strategy**
 
-- [x] ***Easy*** Add Observer in last loop
-- [x] ***Easy*** Implement Design Pattern strategy
+- [x] ***Easy*** Implement Design Pattern Observer
+- [x] ***Easy*** Implement Design Pattern Strategy
 - [ ] ***Hard*** Implement Deep Q for strategy (what states...)
 
 **Objective**
